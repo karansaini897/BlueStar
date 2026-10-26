@@ -1,0 +1,1658 @@
+MASTER IMPLEMENTATION PROMPT
+
+Blue Star Employee Recruitment System: SQL*Plus-Style Console, Employee Hierarchy, Promotions, Job Positions, and Stability Improvements
+
+1. YOUR ROLE AND PRIMARY OBJECTIVE
+
+Act as a senior full-stack frontend engineer, React and TypeScript specialist, database-simulation engineer, UI/UX designer, and software quality engineer.
+
+You are working on my EXISTING Blue Star Employee Recruitment System project.
+
+I am providing the existing project ZIP, which contains the current application source code and a PDF containing my Oracle SQL*Plus database code.
+
+Your task is to inspect the existing project thoroughly and upgrade it in place.
+
+I do NOT want a new application.
+I do NOT want a redesign.
+I do NOT want a backend.
+I do NOT want the existing application replaced with a simplified implementation.
+
+I want the existing application to become more capable while preserving its current visual identity, existing routes, existing features, working interactions, login behaviour, shared state, and overall user experience.
+
+Implement the requested changes directly in the existing codebase.
+
+Do not stop after describing a plan, generating mockups, or explaining what should be done. Make the actual code changes, run the available checks, and fix any issues introduced by your implementation.
+
+If the entire task cannot be completed in one pass, prioritise correctness, preservation of existing functionality, and a working implementation over superficial completion.
+
+⸻
+
+2. ABSOLUTE CONSTRAINTS
+
+These requirements override any implementation preference you may have.
+
+2.1 Do not redesign the existing website
+
+Preserve the existing Blue Star visual identity, including:
+
+* The current Blue Star branding and logo.
+* The existing landing page.
+* The current light and dark themes.
+* Existing typography and visual hierarchy.
+* Existing sidebar structure.
+* Existing navigation patterns.
+* Existing login and registration pages.
+* Existing candidate, employee, HR, job, department, application, interview, report, settings, and privacy policy pages.
+* Existing background treatments, animations, buttons, tables, dialogs, and component styling.
+* Existing responsive behaviour.
+
+Do not replace the current design with a generic admin template.
+
+Do not turn every page into a repetitive grid of cards.
+
+Do not introduce a completely different colour palette, layout system, or design language.
+
+New pages must look as though they were designed as part of the existing Blue Star application.
+
+Reuse existing components, CSS variables, utility classes, icons, dialogs, buttons, tables, and notification systems wherever appropriate.
+
+2.2 Preserve existing functionality
+
+Before changing anything, inspect the current implementation and identify how every major feature works.
+
+Preserve existing functionality, including:
+
+* Login and logout.
+* Role-based routing.
+* Candidate registration.
+* Resume upload and review.
+* Job creation, editing, and deletion.
+* Candidate applications.
+* Application status changes.
+* Interview scheduling and feedback.
+* Candidate hiring.
+* Employee management.
+* Department management.
+* Reports.
+* Theme switching.
+* Existing chatbot.
+* Existing settings.
+* Local data persistence.
+* Reset demonstration data functionality.
+* Existing confirmation dialogs and notification behaviour.
+
+Do not remove or silently replace any existing operation.
+
+Do not rewrite a complete page merely to add one new feature.
+
+When changing shared data structures, update every affected consumer consistently.
+
+2.3 No backend
+
+This is a deliberate requirement.
+
+Do not introduce:
+
+* An Express server.
+* A database server.
+* Oracle connection drivers.
+* A backend API.
+* Supabase.
+* Firebase.
+* A new external database.
+* Server-side SQL execution.
+* A new authentication provider.
+* A dependency on a remote service to make the requested features work.
+
+Keep the application frontend-only.
+
+Use the existing React/TypeScript architecture and its existing local data model.
+
+The new SQL console must operate as a controlled SQL*Plus-style interpreter over the application’s local demonstration database.
+
+It must never claim to be connected to a live Oracle database.
+
+2.4 Never pretend that simulated Oracle operations are real Oracle operations
+
+My supplied SQL file describes an Oracle relational database.
+
+Use that file as the source of truth for the intended schema and database operations.
+
+However, the browser application does not have a live Oracle connection.
+
+Therefore:
+
+* Interpret supported SQL commands locally.
+* Apply supported mutations to the shared local application state.
+* Refresh the relevant user interfaces after successful mutations.
+* Clearly communicate unsupported commands.
+* Clearly distinguish simulated local execution from real Oracle SQL execution.
+* Never claim that a command ran on an actual Oracle server.
+* Never claim that a local change was committed to the real SQL*Plus database.
+* Never claim that stored procedures were executed by Oracle when they were only simulated in TypeScript.
+
+The interface may resemble SQL*Plus, but its execution engine must be honest about its capabilities.
+
+⸻
+
+3. INSPECT THE ENTIRE PROJECT BEFORE MODIFYING IT
+
+Start by examining the complete existing codebase.
+
+Important existing files include, but are not limited to:
+
+* src/App.tsx
+* src/context/RecruitmentContext.tsx
+* src/model/schema.ts
+* src/model/operations.ts
+* src/model/seedData.ts
+* src/model/operations.test.ts
+* src/components/AppShell.tsx
+* src/components/ui.tsx
+* src/components/AnimatedFacetBackground.tsx
+* src/pages/DashboardPage.tsx
+* src/pages/EmployeesPage.tsx
+* src/pages/JobsPage.tsx
+* src/pages/DepartmentsPage.tsx
+* src/pages/CandidatesPage.tsx
+* src/pages/ApplicationsPage.tsx
+* src/pages/InterviewsPage.tsx
+* src/pages/ReportsPage.tsx
+* src/pages/ResumeReviewPage.tsx
+* src/pages/EmployeeWorkspacePage.tsx
+* src/pages/CandidateWorkspacePage.tsx
+* src/pages/SettingsPage.tsx
+* src/index.css
+* package.json
+* public/assets/aistudio/MiniProject_Code_7912b9ce.pdf
+
+The list above is not exhaustive. Inspect any additional files necessary to understand routing, state management, data persistence, account handling, and page composition.
+
+Read the actual SQL code inside the supplied PDF. Do not rely exclusively on the existing TypeScript interfaces.
+
+Inspect the current application operations and determine which requested capabilities already exist.
+
+Reuse working implementations instead of duplicating them.
+
+Before editing, establish:
+
+1. How routes are registered.
+2. How authenticated users are represented.
+3. How role permissions are checked.
+4. How local state is persisted.
+5. How existing database-like operations work.
+6. How jobs, applications, employees, candidates, and departments relate.
+7. How the hiring workflow works.
+8. Which Oracle procedures and views are defined in the PDF.
+9. Which operations already generate activity records or application audit entries.
+10. Whether the current code contains any existing partial SQL interpreter or command execution logic.
+
+Do not create duplicate systems if the existing implementation can be extended.
+
+⸻
+
+4. EXISTING DATABASE MODEL: SOURCE OF TRUTH
+
+The existing TypeScript schema documents the following Oracle objects.
+
+4.1 Tables
+
+ER_DEPARTMENT
+
+Fields:
+
+* DEPT_ID
+* DEPT_NAME
+
+ER_JOB
+
+Fields:
+
+* JOB_ID
+* JOB_TITLE
+* DEPT_ID
+* JOB_DESCRIPTION
+* MIN_SALARY
+* MAX_SALARY
+* VACANCIES
+* JOB_STATUS
+* POSTED_DATE
+
+Allowed job statuses:
+
+* OPEN
+* CLOSED
+* ON HOLD
+
+ER_CANDIDATE
+
+Fields:
+
+* CANDIDATE_ID
+* FULL_NAME
+* EMAIL
+* PHONE
+* QUALIFICATION
+* EXPERIENCE_YEARS
+* CREATED_DATE
+
+ER_APPLICATION
+
+Fields:
+
+* APPLICATION_ID
+* CANDIDATE_ID
+* JOB_ID
+* APPLICATION_DATE
+* APPLICATION_STATUS
+* REMARKS
+
+Allowed application statuses:
+
+* APPLIED
+* SHORTLISTED
+* INTERVIEW
+* SELECTED
+* REJECTED
+* HIRED
+
+ER_INTERVIEW
+
+Fields:
+
+* INTERVIEW_ID
+* APPLICATION_ID
+* INTERVIEW_ROUND
+* INTERVIEW_DATE
+* INTERVIEW_MODE
+* INTERVIEWER_NAME
+* SCORE
+* FEEDBACK
+* INTERVIEW_STATUS
+
+Allowed interview modes:
+
+* ONLINE
+* OFFLINE
+
+Allowed interview statuses:
+
+* SCHEDULED
+* COMPLETED
+* CANCELLED
+
+ER_EMPLOYEE
+
+Fields:
+
+* EMPLOYEE_ID
+* APPLICATION_ID
+* CANDIDATE_ID
+* JOINING_DATE
+* DESIGNATION
+* ANNUAL_SALARY
+* EMPLOYMENT_STATUS
+
+Allowed employment statuses:
+
+* ACTIVE
+* INACTIVE
+
+ER_APPLICATION_AUDIT
+
+Fields:
+
+* AUDIT_ID
+* APPLICATION_ID
+* OLD_STATUS
+* NEW_STATUS
+* CHANGE_DATE
+* CHANGED_BY
+
+4.2 Existing views
+
+The supplied SQL code defines:
+
+* ER_V_CANDIDATE_APPLICATION
+* ER_V_INTERVIEW_DETAILS
+
+Implement these views in the local SQL interpreter as read-only derived views based on the underlying local data.
+
+The view results must reflect the current local state, rather than copied static data.
+
+4.3 Existing procedures and triggers
+
+The supplied SQL file includes procedures and database logic such as:
+
+* ER_ADD_CANDIDATE
+* ER_APPLY_FOR_JOB
+* ER_UPDATE_STATUS
+* ER_SCHEDULE_INTERVIEW
+* ER_APPLICATION_REPORT
+* ER_HIRE_CANDIDATE
+* ER_APP_STATUS_AUDIT
+
+Inspect the complete PDF and identify every relevant definition and signature before implementing procedure simulation.
+
+Do not guess parameter names, argument order, table columns, constraints, or allowed status values.
+
+Where a procedure already has an equivalent TypeScript operation, reuse the existing operation.
+
+Where a procedure is not implemented or its behaviour cannot be reproduced faithfully, report that it is unsupported rather than pretending it succeeded.
+
+The application must remain internally consistent with the supplied schema.
+
+4.4 Do not silently alter the Oracle schema
+
+Do not add the hierarchy fields described later in this prompt directly to the existing Oracle tables unless those fields already exist in the supplied SQL.
+
+The requested hierarchy is an application-level extension for this frontend prototype.
+
+Keep additional frontend-only metadata separate from the Oracle-compatible fields.
+
+Clearly distinguish frontend-only fields from actual SQL table columns in the console and documentation.
+
+⸻
+
+5. NEW FEATURE ONE: SQL*PLUS-STYLE CONSOLE INSIDE THE HR WORKSPACE
+
+Add a new navigation item called:
+
+SQL Console
+
+It must be available only to an authenticated HR account.
+
+Do not expose it to candidates or ordinary employees.
+
+Place it naturally within the existing HR sidebar. Follow the existing sidebar’s spacing, icon size, active state, collapsed behaviour, and navigation conventions.
+
+Do not rebuild the sidebar.
+
+5.1 Visual requirements
+
+Build a polished SQL*Plus-style interface that matches the existing Blue Star design.
+
+It should contain:
+
+1. A command editor.
+2. An Execute button.
+3. A Clear button.
+4. A command history panel.
+5. A results panel.
+6. A query output table.
+7. An execution status indicator.
+8. A concise error panel.
+9. A list of supported commands.
+10. A database simulation status label.
+11. A reset or clear-output action where appropriate.
+12. A copy-results action where practical.
+
+Use a monospaced font inside the SQL editor and command output, while retaining the existing application typography elsewhere.
+
+Use proper indentation, line numbers if practical, syntax colouring if it can be implemented without unnecessary dependencies, and readable result tables.
+
+The interface must work in both light and dark themes.
+
+It must remain usable on smaller screens.
+
+Do not let the editor or output overflow the viewport.
+
+5.2 Required status disclosure
+
+Display a subtle but understandable status message:
+
+LOCAL SQL SIMULATION · NOT CONNECTED TO ORACLE
+
+Include a short explanation:
+
+Commands run against this browser's local recruitment data. Changes are shared with the website's interfaces but are not synchronised with a live Oracle database.
+
+Do not repeat this warning in every result row. Make it visible in the console header or status area.
+
+5.3 The central requirement: one shared source of truth
+
+This is the most important technical requirement.
+
+The SQL console must use the SAME shared recruitment state used by the existing website.
+
+Do not create a separate SQL-only dataset.
+
+Do not maintain one array for the console and another for the dashboard.
+
+Do not implement SQL mutations that only change the text displayed in the results panel.
+
+Do not simulate a successful UPDATE while leaving the application data unchanged.
+
+Instead:
+
+* Use the existing RecruitmentContext.
+* Extend the context or its operation layer where necessary.
+* Apply mutations through the same shared state and persistence mechanism used by the current website.
+* Refresh derived views and metrics after a successful mutation.
+* Preserve existing business rules and validations.
+* Reuse existing operations wherever possible.
+
+For example, if a supported SQL command updates a job’s title, the updated title must appear in the Jobs page.
+
+If a supported SQL command updates an application status, the Applications page, dashboard metrics, reports, and relevant audit records must reflect the change.
+
+If a supported SQL command inserts a candidate, that candidate must become visible in the appropriate candidate views.
+
+If a supported SQL command hires a candidate through the existing hiring operation, the employee directory and relevant application records must reflect the result.
+
+These are shared-state requirements, not merely visual demonstrations.
+
+⸻
+
+6. IMPLEMENT A CONTROLLED LOCAL SQL INTERPRETER
+
+Build a small, maintainable SQL interpreter suitable for the application’s frontend-only demonstration environment.
+
+Do not use JavaScript eval, Function, arbitrary code execution, or dynamic code generation.
+
+Do not execute raw SQL as JavaScript.
+
+Do not create a fake terminal that merely prints a success message.
+
+Do not attempt to implement all of Oracle SQL. Implement a clearly defined, useful subset.
+
+Use a proper tokenizer or parser with clear separation between parsing, validation, command execution, and result rendering.
+
+Keep the interpreter in a dedicated module rather than placing hundreds of lines of SQL parsing logic directly inside a React page.
+
+Follow the existing TypeScript conventions.
+
+6.1 Basic SQL commands
+
+Support the following where the existing data model allows them to be implemented accurately.
+
+SELECT
+
+Examples:
+
+SELECT * FROM ER_DEPARTMENT;
+
+SELECT * FROM ER_JOB;
+
+SELECT JOB_ID, JOB_TITLE, JOB_STATUS FROM ER_JOB;
+
+SELECT * FROM ER_CANDIDATE WHERE CANDIDATE_ID = 1003;
+
+SELECT * FROM ER_APPLICATION WHERE APPLICATION_STATUS = 'APPLIED';
+
+SELECT * FROM ER_EMPLOYEE WHERE EMPLOYMENT_STATUS = 'ACTIVE';
+
+SELECT * FROM ER_INTERVIEW;
+
+SELECT * FROM ER_APPLICATION_AUDIT;
+
+Support:
+
+* SELECT *
+* Explicit column lists.
+* Table aliases if feasible.
+* Basic equality and inequality conditions.
+* Numeric comparisons.
+* AND and OR with correct precedence if implemented.
+* IS NULL.
+* IS NOT NULL.
+* ORDER BY.
+* ASC and DESC.
+* Basic LIKE conditions.
+* COUNT(*).
+* Supported aggregate functions where they can be implemented reliably.
+* Basic INNER JOIN for compatible tables.
+* Filtering and projection.
+* Case-insensitive SQL keywords.
+* Semicolon-terminated statements.
+* Multiple statements only when the parser can safely separate them.
+
+Unsupported SQL must return a clear error.
+
+Do not silently ignore unsupported clauses.
+
+DESC and DESCRIBE
+
+Support:
+
+DESC ER_CANDIDATE;
+
+DESCRIBE ER_EMPLOYEE;
+
+Display:
+
+* Column name.
+* Approximate data type.
+* Whether the field is required.
+* Whether the field is a primary key or foreign key, where known.
+
+Clearly label any frontend-only fields so they are not confused with Oracle columns.
+
+Table listing
+
+Support a convenient command such as:
+
+SHOW TABLES;
+
+This is a convenience command for the simulated console, not a claim that every Oracle SQL*Plus command is supported.
+
+List the known tables and supported views.
+
+INSERT
+
+Support valid INSERT INTO ... VALUES (...) statements for supported tables.
+
+Also support explicit column lists.
+
+Validate:
+
+* Required fields.
+* Data types.
+* Allowed status values.
+* Primary key uniqueness.
+* Unique constraints.
+* Foreign key relationships.
+* Numeric ranges.
+* Existing application business rules.
+* Required department or job references.
+
+Use the existing operations wherever possible.
+
+Do not allow malformed inserts to corrupt local state.
+
+UPDATE
+
+Support valid statements such as:
+
+UPDATE ER_JOB SET JOB_STATUS = 'ON HOLD' WHERE JOB_ID = 101;
+
+The command must:
+
+1. Parse the statement.
+2. Identify the target table.
+3. Validate the column names.
+4. Parse the WHERE clause.
+5. Determine the matching records.
+6. Validate the proposed updates.
+7. Apply the changes through the shared state.
+8. Refresh dependent views.
+9. Display the affected row count.
+10. Display any validation errors.
+
+Do not execute an UPDATE against the wrong record.
+
+DELETE
+
+Support valid DELETE statements for supported tables, with appropriate constraints.
+
+For example:
+
+DELETE FROM ER_JOB WHERE JOB_ID = 107;
+
+Respect the application’s referential integrity rules.
+
+If a job has dependent applications, do not silently delete the job and leave orphaned records.
+
+If the operation is prohibited, return an informative error explaining why.
+
+Require confirmation before potentially destructive operations.
+
+For DELETE statements without a WHERE clause, require an explicit additional confirmation and clearly explain the scope before applying the mutation.
+
+Do not accidentally empty a table because a WHERE clause was parsed incorrectly.
+
+6.2 Transaction-style commands
+
+Implement local transaction behaviour to the extent reasonably possible.
+
+Support:
+
+* COMMIT
+* ROLLBACK
+* SAVEPOINT
+
+These commands must have clearly documented local semantics.
+
+A suitable implementation is to stage mutations in a working copy of the local database state until COMMIT, while displaying the working results inside the console.
+
+On COMMIT:
+
+* Validate the complete pending change set.
+* Apply all accepted changes to the shared local state.
+* Persist the result.
+* Refresh the website’s derived data.
+* Clear the committed transaction log.
+
+On ROLLBACK:
+
+* Discard uncommitted mutations.
+* Restore the transaction’s initial working state.
+* Do not overwrite previously committed local changes.
+
+On SAVEPOINT:
+
+* Save the current transaction snapshot.
+* Allow rollback to a supported named savepoint if implemented.
+
+Do not call local browser-storage changes a real Oracle transaction.
+
+If complete transactional semantics cannot be implemented safely, implement a simpler consistent model and document the limitation.
+
+6.3 Oracle-specific features
+
+The console should recognise and support a useful subset of Oracle-style syntax.
+
+Implement the following where feasible:
+
+* SYSDATE
+* USER as a clearly defined simulated current database user
+* NVL for supported expressions
+* Basic DUAL queries where practical
+* EXEC or EXECUTE for supported simulated procedures
+* SET SERVEROUTPUT ON as a local display setting
+* SHOW ERRORS for locally available simulated operation errors
+* DESC
+* SELECT statements using the supported views
+* Basic PL/SQL procedure invocation through explicit handlers
+
+Do not claim to support arbitrary PL/SQL blocks.
+
+Do not accept arbitrary anonymous PL/SQL blocks and pretend they executed.
+
+Do not claim that Oracle sequences, triggers, packages, or database-side permissions are running in the browser.
+
+Where sequences are simulated, label them as local ID generation.
+
+Where a trigger’s effect is reproduced through TypeScript, label it as simulated audit behaviour.
+
+6.4 Existing views
+
+Implement local read-only versions of:
+
+* ER_V_CANDIDATE_APPLICATION
+* ER_V_INTERVIEW_DETAILS
+
+Build each view’s result dynamically from the current underlying state.
+
+Do not duplicate the view data as independent records.
+
+A view must always reflect changes to its underlying candidate, application, job, department, or interview records.
+
+Reject UPDATE, INSERT, and DELETE against these views unless the relevant operation is deliberately and correctly implemented. Prefer treating them as read-only.
+
+6.5 Existing stored procedures
+
+Inspect the PDF before implementing procedure handlers.
+
+Where possible, support the following existing procedures through the corresponding TypeScript operations:
+
+* ER_ADD_CANDIDATE
+* ER_APPLY_FOR_JOB
+* ER_UPDATE_STATUS
+* ER_SCHEDULE_INTERVIEW
+* ER_APPLICATION_REPORT
+* ER_HIRE_CANDIDATE
+
+Use the exact procedure signatures from the PDF.
+
+For example, if the supplied signature for ER_HIRE_CANDIDATE is:
+
+ER_HIRE_CANDIDATE(P_APPLICATION_ID, P_DESIGNATION, P_ANNUAL_SALARY)
+
+then its simulated handler must accept and validate those arguments in that order.
+
+Use the existing hiring operation rather than duplicating hiring logic.
+
+The result must reflect the same hiring rules and validations used elsewhere in the website.
+
+If a procedure is not available or cannot be faithfully simulated, report that clearly.
+
+Do not manufacture successful output for unsupported procedures.
+
+6.6 Error messages
+
+Return useful SQL-style errors for:
+
+* Unknown tables.
+* Unknown columns.
+* Invalid values.
+* Invalid status values.
+* Duplicate primary keys.
+* Duplicate unique values.
+* Missing required fields.
+* Foreign key violations.
+* Invalid SQL syntax.
+* Missing WHERE clauses where required by safety rules.
+* Unsupported joins or functions.
+* Unsupported Oracle procedures.
+* Invalid procedure arguments.
+* Failed business-rule validations.
+* Attempts to modify read-only views.
+* Invalid transaction operations.
+
+Examples of acceptable messages:
+
+ORA-SIM-00942: table or view does not exist in the local simulation.
+
+ORA-SIM-00904: invalid identifier.
+
+ORA-SIM-02291: simulated integrity constraint violated.
+
+ORA-SIM-00001: duplicate identifier.
+
+These are custom simulation messages. Do not misrepresent them as actual Oracle server error responses.
+
+Display the offending statement or a useful description where practical, but do not expose internal application secrets.
+
+6.7 Command history
+
+Maintain a useful session history containing:
+
+* Command text.
+* Execution time.
+* Success or failure.
+* Number of rows affected.
+* Execution duration where measurable.
+* A short result summary.
+
+Allow the user to revisit previous commands.
+
+Do not store passwords or confidential candidate information in command history unnecessarily.
+
+Allow history to be cleared.
+
+Persist only the history needed for a useful prototype experience.
+
+⸻
+
+7. SQL COMMANDS MUST UPDATE THE WEBSITE
+
+This section is critical.
+
+A successful local SQL mutation must update the existing application’s shared state, not just the console output.
+
+Examples:
+
+Example A: Updating a job
+
+Command:
+
+UPDATE ER_JOB SET JOB_TITLE = 'Senior Software Developer' WHERE JOB_ID = 102;
+
+Expected result:
+
+* The local job record is updated.
+* The Jobs page shows the new title.
+* Related job listings use the new title.
+* Any derived views update.
+* The activity log records the change where appropriate.
+* The console reports the number of affected rows.
+
+Example B: Updating an application
+
+Command:
+
+UPDATE ER_APPLICATION SET APPLICATION_STATUS = 'SHORTLISTED' WHERE APPLICATION_ID = 5012;
+
+Expected result:
+
+* The application record is updated if the transition is valid.
+* The Applications page reflects the new status.
+* Relevant dashboard metrics update.
+* The local audit trail records the status transition if the existing application logic supports it.
+* Related candidate views refresh.
+
+Do not bypass existing status-transition validation just to make SQL execution easier.
+
+Example C: Reading candidates
+
+Command:
+
+SELECT CANDIDATE_ID, FULL_NAME, EMAIL FROM ER_CANDIDATE;
+
+Expected result:
+
+* The results come from the current shared local database state.
+* Newly registered candidates appear if they exist in the state.
+* Deleted or updated records are reflected correctly.
+
+Example D: Hiring a candidate
+
+A supported simulated invocation of the existing hiring procedure must reuse the current hiring operation.
+
+Expected result:
+
+* The candidate and application are validated.
+* The application is marked HIRED according to existing business rules.
+* The employee record is created according to existing business rules.
+* Duplicate hiring is prevented.
+* Related dashboards update.
+* Relevant local audit and activity records update.
+
+Do not create duplicate employees.
+
+Do not create an employee without a valid associated application and candidate when the existing model requires those relationships.
+
+Example E: Inserting a department
+
+Command:
+
+INSERT INTO ER_DEPARTMENT (DEPT_ID, DEPT_NAME) VALUES (8, 'Quality Assurance');
+
+Expected result:
+
+* The department is inserted into shared local state.
+* The Departments page displays it.
+* Department selectors update.
+* Job creation forms can use the department.
+* Local persistence is updated.
+
+Example F: Deleting a department
+
+If the department has dependent jobs, follow the existing integrity rules.
+
+Do not silently delete the department and orphan its jobs.
+
+Return a useful error or require a valid supported reassignment workflow.
+
+⸻
+
+8. NEW FEATURE TWO: JOB POSITIONS AND EMPLOYEE DESIGNATIONS
+
+The website already contains job postings in ER_JOB and employee designations in ER_EMPLOYEE.
+
+Do not confuse these concepts.
+
+* A job posting is a vacancy that candidates can apply for.
+* An employee position is the person’s current role inside the organisation.
+* A hierarchy level determines the person’s authority within the employee structure.
+
+Keep these concepts separate.
+
+8.1 Job postings
+
+Preserve the existing job management page.
+
+Continue to support:
+
+* Creating jobs.
+* Editing jobs.
+* Deleting jobs subject to constraints.
+* Job descriptions.
+* Departments.
+* Salary ranges.
+* Vacancies.
+* Job status.
+* Candidate applications.
+
+Do not break the existing job application workflow.
+
+8.2 Employee positions
+
+Extend employee management to make an employee’s current position easy to identify and update.
+
+Display:
+
+* Employee name.
+* Employee ID.
+* Current designation.
+* Department.
+* Hierarchy level.
+* Reporting manager, if assigned.
+* Employment status.
+* Joining date.
+* Current annual salary where already available and appropriate.
+* Promotion history.
+
+Use existing DESIGNATION and department information wherever possible.
+
+Add frontend-only fields for reporting relationships and hierarchy metadata only where necessary.
+
+Do not pretend those new fields exist in the supplied Oracle schema.
+
+8.3 Position management
+
+Where practical, provide an HR interface for defining or selecting position titles.
+
+Possible examples include:
+
+* HR Executive
+* HR Manager
+* Software Developer
+* Senior Software Developer
+* Technical Lead
+* Software Engineering Manager
+* Data Analyst
+* Senior Data Analyst
+* Database Administrator
+* Finance Executive
+* Finance Manager
+
+These are examples, not a mandatory list of existing employees or approved positions.
+
+Allow HR to add custom position titles where appropriate.
+
+Avoid hard-coding a small list that prevents future positions from being added.
+
+Validate that a selected position is not empty.
+
+When an employee is promoted, update the employee’s current designation and hierarchy information consistently.
+
+Do not create a job vacancy automatically every time an employee receives a promotion.
+
+⸻
+
+9. NEW FEATURE THREE: EMPLOYEE HIERARCHY
+
+Introduce a clear organisational hierarchy.
+
+The hierarchy must be independent of the employee’s job title.
+
+For example, two employees may have the same designation but different managerial authority. Conversely, an employee may have a senior-sounding designation without being allowed to promote another employee unless their hierarchy permissions permit it.
+
+9.1 Hierarchy data model
+
+Inspect the existing employee and account relationships before adding fields.
+
+Extend the frontend data model using appropriate optional metadata.
+
+Use a structure equivalent to:
+
+* hierarchyLevel: numeric level.
+* managerEmployeeId: employee ID of the direct reporting manager, or null.
+* positionTitle: current position, where needed.
+* promotionHistory: a sequence of recorded promotions.
+* lastPromotionDate: optional date.
+* promotionNotes: optional notes.
+
+Adapt field names to the existing code conventions.
+
+Do not duplicate information that is already represented correctly.
+
+Do not modify the original Oracle-compatible field definitions unnecessarily.
+
+Keep the new hierarchy metadata within the frontend’s local demonstration model.
+
+9.2 Hierarchy levels
+
+Use an understandable numeric system:
+
+* Level 1: Individual contributor or entry-level employee.
+* Level 2: Senior employee or team lead.
+* Level 3: Manager.
+* Level 4: Senior manager or department-level leader.
+* Level 5: Executive-level employee.
+
+These labels are configurable presentation labels, not claims that the supplied Oracle database defines these levels.
+
+HR is the highest authority in this frontend prototype.
+
+Do not assume that a higher number automatically grants every possible permission without checking the permission rules.
+
+9.3 HR authority
+
+The existing HR account must retain its HR role.
+
+HR must be able to:
+
+* View all employee records.
+* View employee profiles.
+* Assign initial hierarchy levels.
+* Assign reporting managers.
+* Change employee designations.
+* Promote employees.
+* Change an employee’s reporting manager.
+* View promotion history.
+* Review organisational hierarchy.
+* Correct an incorrectly assigned hierarchy level.
+* Remove an employee’s reporting relationship when appropriate.
+* Update relevant employee details using existing validation rules.
+
+HR operations must use the shared state and update the existing employee interfaces.
+
+Do not remove HR’s existing recruitment capabilities.
+
+9.4 Promotion authority for hierarchy level 2 and above
+
+Implement the following permission rule:
+
+An employee at hierarchy level 2 or above may promote eligible employees who report directly or indirectly to them.
+
+They may not promote:
+
+* Themselves.
+* Their manager.
+* Someone above their own hierarchy level.
+* An employee outside their reporting hierarchy.
+* An employee for whom they lack permission under the rules above.
+
+HR may manage employees across the organisation.
+
+A level 2 employee may promote eligible level 1 subordinates.
+
+A level 3 employee may promote eligible level 1 or level 2 subordinates within their reporting hierarchy.
+
+Apply the same principle to higher levels.
+
+The proposed target level must never exceed the promoting employee’s level.
+
+If a manager promotes a subordinate, the subordinate must remain below the manager’s hierarchy level.
+
+9.5 Promotion validation
+
+Before a promotion is saved:
+
+1. Confirm that the acting user is authenticated.
+2. Confirm that the acting user’s role and hierarchy level permit the action.
+3. Confirm that the target employee exists.
+4. Confirm that the target employee is active where required.
+5. Confirm that the acting user is not promoting themselves.
+6. Confirm that the target is in the acting user’s reporting hierarchy unless the acting user is HR.
+7. Confirm that the target is below the acting user’s hierarchy level.
+8. Confirm that the proposed new hierarchy level is valid.
+9. Confirm that the target will remain below the acting user’s hierarchy level.
+10. Confirm that the selected position title is valid.
+11. Validate any salary change using the application’s existing business rules.
+12. Display a confirmation dialog summarising the change.
+13. Apply the change only after confirmation.
+14. Record a promotion history entry.
+15. Update the employee’s current designation and hierarchy level.
+16. Update any relevant reporting relationships if explicitly requested.
+17. Record the acting user and timestamp.
+18. Notify the user of success or failure.
+
+If validation fails, explain why and make no changes.
+
+Do not implement permission checks only by hiding buttons. Enforce the checks inside the operation that applies the promotion as well.
+
+Remember that frontend-only permission checks are not production-grade security. The goal here is a consistent prototype workflow.
+
+9.6 Reporting hierarchy
+
+Implement a way to understand who reports to whom.
+
+Depending on the existing design, this may be a table, nested list, organisational tree, or expandable reporting structure.
+
+Do not force a complicated visual tree if it makes the current design worse.
+
+Show:
+
+* Employee.
+* Position.
+* Hierarchy level.
+* Reporting manager.
+* Number of direct reports where appropriate.
+
+Allow authorised users to open employee profiles from the hierarchy view.
+
+Avoid circular reporting relationships.
+
+An employee cannot report to themselves.
+
+An employee cannot be assigned to report to one of their own descendants.
+
+Prevent invalid hierarchy changes.
+
+9.7 Promotion history
+
+For every successful promotion, record:
+
+* Employee ID.
+* Employee name or stable reference.
+* Previous designation.
+* New designation.
+* Previous hierarchy level.
+* New hierarchy level.
+* Previous salary where applicable.
+* New salary where applicable.
+* Acting user’s account identifier.
+* Timestamp.
+* Optional reason or notes.
+
+Do not erase old promotion records when a new promotion occurs.
+
+Make history accessible from the employee profile.
+
+The current designation and hierarchy level must be derived from the current employee record, not from the last displayed toast or dialog.
+
+⸻
+
+10. NEW FEATURE FOUR: ACCOUNT DIRECTORY FOR HR
+
+Add an account directory or extend an existing suitable HR page.
+
+The purpose is to let HR see which people currently have an account in the local prototype.
+
+Do not make this a public directory.
+
+Do not show account credentials on the public landing page, public job listings, or sign-in page.
+
+10.1 Required account information
+
+Display, as appropriate:
+
+* Full name.
+* Username.
+* Current account role.
+* Account status.
+* Linked candidate ID, where applicable.
+* Linked employee ID, where applicable.
+* Current employee position, where applicable.
+* Hierarchy level, where applicable.
+
+Provide search and role filtering.
+
+Do not confuse a candidate account with an employee account merely because the candidate’s name also exists in the candidate table.
+
+Use the existing account-to-candidate and account-to-employee relationships where available.
+
+When an employee is hired from a candidate account, handle the relationship consistently. Do not create duplicate accounts for the same person unless the existing account model deliberately requires separate accounts.
+
+10.2 Existing seeded accounts
+
+The current seed data contains the following accounts:
+
+* Karan Anil Saini: HR, username karan.saini.
+* Diksha Rajwani: Employee, username diksha.rajwani.
+* Yug Prajapati: Employee, username yug.prajapati.
+* Chahat Tekwani: Candidate, username chahat.tekwani.
+* Shravani Salunkhe: Candidate, username shravani.salunkhe.
+* Gauri Sardal: Candidate, username gauri.sardal.
+* Jatin Rawlani: Candidate, username jatin.rawlani.
+* Soumya Ramani: Candidate, username soumya.ramani.
+* Aarya Sanwre: Candidate, username aarya.sanwre.
+* Kshitij Sachan: Candidate, username kshitij.sachan.
+* Sahil Varlani: Candidate, username sahil.varlani.
+
+Use these records as the current account seed data. Inspect the actual source before editing, and do not create duplicates.
+
+The current prototype login convention uses the same value for username and password.
+
+Preserve existing working login behaviour unless a necessary correction is required to support the new features.
+
+Do not print passwords to the browser console or expose them in public UI.
+
+If the HR account directory includes a credential demonstration, make the limitations unmistakable and restrict the display to HR within this prototype. Prefer displaying usernames and explaining the current prototype login convention rather than storing new plaintext passwords.
+
+Never claim that this convention is secure.
+
+10.3 New accounts
+
+Preserve the existing candidate registration workflow.
+
+When a new candidate registers:
+
+* Create the account using the existing registration conventions.
+* Validate the username.
+* Prevent duplicate accounts.
+* Link the account to the correct candidate record.
+* Keep the account role as CANDIDATE until the existing hiring workflow or an authorised role-management operation changes it.
+* Do not automatically grant HR or employee permissions.
+* Do not invent credentials or silently assign a higher role.
+
+When a candidate is hired, update the appropriate account relationship consistently with the existing design.
+
+⸻
+
+11. EMPLOYEE DIRECTORY AND PROFILES
+
+Improve the existing employee directory without replacing it.
+
+Where appropriate, display:
+
+* Employee name.
+* Designation.
+* Department.
+* Hierarchy level.
+* Reporting manager.
+* Employment status.
+* Joining date.
+* Relevant profile details.
+
+Provide a profile view or modal using the existing interaction style.
+
+Ensure that profile information is derived from shared state.
+
+HR must be able to see the employee directory and access employee profiles.
+
+Employees should see only the information appropriate to their role and the existing privacy design.
+
+Do not expose sensitive candidate details or internal HR notes to ordinary employees without an existing business requirement.
+
+If employee permissions allow them to view their own profile, ensure they cannot edit hierarchy fields or promote themselves.
+
+⸻
+
+12. ACCOUNT ROLES AND AUTHENTICATION PRESERVATION
+
+Preserve the current role system:
+
+* HR
+* EMPLOYEE
+* CANDIDATE
+
+Do not rename these existing role constants without updating every dependent component.
+
+Do not break the existing login page or route handling.
+
+Do not change the existing login credentials unnecessarily.
+
+Do not display demo passwords on the sign-in page.
+
+Do not add a public role-switching control.
+
+Do not allow users to change their role merely by editing a URL or local navigation state.
+
+The prototype may use local authentication state, but all new operations must check the current account’s role before performing an action.
+
+For hierarchy operations, use the actual current account and its linked employee record.
+
+Do not infer authority from the text displayed in the interface.
+
+If an account has no valid linked employee record, do not invent an employee hierarchy level for it.
+
+HR remains the designated HR account unless the existing application already implements a different explicit role-management workflow.
+
+⸻
+
+13. DATA MODEL AND LOCAL PERSISTENCE
+
+Extend the existing state model rather than replacing it.
+
+The current application uses a shared recruitment state and browser storage.
+
+Preserve that architecture.
+
+13.1 State migration
+
+When adding hierarchy metadata or promotion history:
+
+* Provide sensible defaults for existing records.
+* Handle previously saved local data without crashing.
+* Preserve existing candidate, application, interview, job, department, employee, audit, activity, resume, and account records.
+* Avoid resetting all users’ local data unnecessarily.
+* Validate deserialised state before using it.
+* Handle missing optional fields.
+* Preserve compatibility with the existing storage key where practical.
+* If a versioned migration is required, implement it deliberately.
+
+Do not discard existing user-created records simply because the schema has been extended.
+
+13.2 Shared state
+
+Use the existing RecruitmentContext and operations layer.
+
+All new actions must use centralised operations for:
+
+* SQL mutations.
+* Job position changes.
+* Promotions.
+* Reporting-manager changes.
+* Account relationship updates.
+* Audit or activity logging.
+
+Avoid scattering state updates across unrelated components.
+
+Do not update a React state object in place.
+
+Use immutable updates and existing context conventions.
+
+13.3 Data integrity
+
+Respect the existing relationships.
+
+For example:
+
+* Applications refer to candidates and jobs.
+* Interviews refer to applications.
+* Employees refer to applications and candidates.
+* Jobs refer to departments.
+
+Do not create invalid references.
+
+Do not bypass existing validation merely because the action originated in the SQL console.
+
+If a change would invalidate a foreign key or other existing constraint, reject it and explain why.
+
+⸻
+
+14. DESIGN AND QUALITY IMPROVEMENTS
+
+Make the website smoother and improve visual clarity without ruining the existing design.
+
+Do not interpret “improve resolution” as permission to enlarge every element or change the entire layout.
+
+The goal is crisp rendering, consistent spacing, reliable responsiveness, and smoother interactions.
+
+14.1 Preserve visual identity
+
+Retain:
+
+* Existing brand colours.
+* Existing typography.
+* Existing logo.
+* Existing animated background.
+* Existing light/dark themes.
+* Existing page structure.
+* Existing sidebar behaviour.
+* Existing visual hierarchy.
+
+Use the current design system.
+
+Do not add a new UI framework merely for these improvements.
+
+14.2 Improve rendering quality
+
+Inspect:
+
+* Blurry or stretched images.
+* Incorrect image sizing.
+* Unnecessary scaling transforms.
+* Overflowing tables.
+* Clipped dialogs.
+* Misaligned icons.
+* Inconsistent button heights.
+* Inconsistent input spacing.
+* Poor text contrast.
+* Unreadable small text.
+* Layout shifts.
+* Unnecessary rerenders.
+* Slow transitions.
+* Incorrect responsive breakpoints.
+* Horizontal overflow.
+
+Correct actual issues rather than applying global CSS overrides that damage other pages.
+
+Use appropriate image sizing and preserve aspect ratios.
+
+Do not upscale low-resolution source assets and pretend their underlying resolution has improved.
+
+Do not remove the animated facet background unless it is genuinely causing a verified problem.
+
+14.3 Smooth interactions
+
+Use restrained, consistent transitions.
+
+Ensure:
+
+* Buttons respond immediately.
+* Loading indicators appear when appropriate.
+* Long-running local operations do not block the interface unnecessarily.
+* Dialogs open and close correctly.
+* Focus management works.
+* Form validation is understandable.
+* Toast notifications do not obscure important controls.
+* Theme changes apply across all pages.
+* Navigation does not reset unrelated application state.
+
+Do not add elaborate animations that slow down the application.
+
+Respect reduced-motion preferences where practical.
+
+14.4 Accessibility
+
+Improve:
+
+* Keyboard navigation.
+* Visible focus indicators.
+* Input labels.
+* Button labels.
+* Dialog accessibility.
+* Table readability.
+* Colour contrast.
+* Error announcements.
+* Responsive behaviour.
+
+Do not remove accessible labels to achieve a cleaner visual appearance.
+
+⸻
+
+15. SECURITY AND SAFE LOCAL SQL EXECUTION
+
+Although this is a frontend-only prototype, do not implement unsafe behaviour.
+
+The SQL interpreter must never use arbitrary JavaScript evaluation.
+
+Only recognised and explicitly supported command types may execute.
+
+Unknown commands must fail safely.
+
+For destructive statements:
+
+* Display a confirmation dialog.
+* Explain which table and records will be affected.
+* Require confirmation before applying the mutation.
+* Reject malformed conditions.
+* Never silently interpret an invalid WHERE clause as no condition.
+
+For account and employee operations:
+
+* Check the current role.
+* Check the current employee hierarchy.
+* Validate the target record.
+* Validate the requested changes.
+* Reject unauthorised actions.
+* Record important local activity.
+
+Do not expose passwords or API keys.
+
+Do not introduce new external API dependencies for the SQL interpreter.
+
+Remember that localStorage and frontend permission checks are not suitable for protecting real confidential production data. Do not describe this prototype as production-secure.
+
+⸻
+
+16. TESTING REQUIREMENTS
+
+Before declaring completion, test the existing features and all new functionality.
+
+Use the existing test suite and project scripts.
+
+Do not delete tests simply because they fail after your changes.
+
+Fix regressions caused by your implementation.
+
+16.1 Build and type checking
+
+Run the available project checks, including:
+
+* TypeScript checking through the existing lint script.
+* Production build.
+* Existing unit tests, if a test runner is configured.
+
+Resolve errors caused by your changes.
+
+Do not claim a check passed if it was not run.
+
+16.2 SQL interpreter tests
+
+Test at least the following:
+
+1. SELECT * FROM ER_DEPARTMENT;
+2. SELECT * FROM ER_JOB;
+3. SELECT * FROM ER_CANDIDATE;
+4. SELECT * FROM ER_APPLICATION;
+5. SELECT * FROM ER_EMPLOYEE;
+6. DESC ER_CANDIDATE;
+7. SHOW TABLES;
+8. A valid SELECT with a WHERE clause.
+9. A valid ORDER BY query.
+10. A valid INSERT.
+11. A valid UPDATE.
+12. A valid DELETE with confirmation.
+13. An invalid table name.
+14. An invalid column name.
+15. A duplicate primary key.
+16. An invalid foreign key.
+17. An invalid status value.
+18. An unsupported command.
+19. COMMIT.
+20. ROLLBACK.
+21. A supported stored-procedure simulation.
+22. A rejected unsupported stored procedure.
+23. A query against each supported view.
+24. A query after a successful mutation to confirm the changed data is visible.
+
+16.3 Shared-state tests
+
+Confirm that:
+
+* A job updated through SQL appears with the new title in the Jobs page.
+* A candidate inserted through SQL appears in the relevant candidate views.
+* An application updated through SQL appears with the new status in the Applications page.
+* Dashboard metrics update after mutations.
+* Department changes appear in department selectors.
+* Employee promotions update employee profiles.
+* Promotion history remains available after navigation and reload.
+* Local changes survive a browser refresh where local persistence is expected.
+* Reset demonstration data continues to work.
+* ROLLBACK does not overwrite previously committed changes.
+
+16.4 Hierarchy tests
+
+Test at least these scenarios:
+
+1. HR can promote an eligible employee.
+2. A level 1 employee cannot promote another employee.
+3. A level 2 employee can promote an eligible subordinate.
+4. A level 3 employee can promote an eligible level 1 or level 2 subordinate.
+5. An employee cannot promote themselves.
+6. An employee cannot promote their manager.
+7. An employee cannot promote someone outside their reporting hierarchy.
+8. A manager cannot promote a subordinate to the manager’s own level or above.
+9. An invalid reporting relationship is rejected.
+10. A circular reporting hierarchy is rejected.
+11. An unauthorised user cannot invoke the promotion operation directly.
+12. Promotion history records successful changes.
+13. Failed promotions leave all records unchanged.
+
+16.5 Existing workflow regression tests
+
+Verify that:
+
+* Login works.
+* Logout works.
+* Candidate registration works.
+* Resume upload still works.
+* Applications can be reviewed.
+* Application statuses can be updated.
+* Interviews can be scheduled.
+* Interview feedback can be saved.
+* Hiring works.
+* Duplicate hiring is prevented.
+* Employees can be viewed.
+* Jobs can be created and edited.
+* Departments can be managed.
+* Reports load.
+* Light and dark modes work.
+* Existing navigation works.
+* The collapsed sidebar still behaves correctly.
+* Existing settings and reset functionality work.
+
+Do not sacrifice existing behaviour to make a new feature pass.
+
+⸻
+
+17. IMPLEMENTATION ORDER
+
+Follow this order to reduce regressions.
+
+Phase 1: Inspect and map the existing code
+
+Identify the existing components, operations, types, state relationships, routes, and constraints.
+
+Phase 2: Add hierarchy metadata and migration
+
+Extend the current model carefully, preserve existing data, and establish the hierarchy permission functions.
+
+Phase 3: Implement promotions and job-position management
+
+Extend the existing employee interface and reuse centralised operations.
+
+Phase 4: Add the HR account directory
+
+Use the current account list and maintain correct role-to-record relationships.
+
+Phase 5: Implement the SQL interpreter
+
+Build a separate parser and execution layer with a deliberately limited command set.
+
+Phase 6: Connect the interpreter to shared state
+
+Route supported SQL mutations through the existing operation layer and RecruitmentContext.
+
+Phase 7: Build the SQL Console interface
+
+Add the HR-only navigation entry and the console’s editor, history, output, errors, and status indicators.
+
+Phase 8: Polish the interface
+
+Correct genuine responsiveness, rendering, accessibility, and interaction issues without redesigning the site.
+
+Phase 9: Run tests and fix regressions
+
+Run type checks, build checks, interpreter tests, hierarchy tests, and existing workflow tests.
+
+Phase 10: Provide an implementation report
+
+Explain what was actually completed and identify limitations honestly.
+
+Do not claim that the console is a real Oracle connection.
+
+⸻
+
+18. ACCEPTANCE CRITERIA
+
+The work is complete only when the following conditions are met.
+
+* The existing website remains recognisably the same application.
+* Existing routes and major features remain functional.
+* The HR sidebar contains the new SQL Console entry.
+* Ordinary employees and candidates cannot access the console through normal navigation.
+* The console supports the documented subset of SQL commands.
+* The interpreter does not execute arbitrary JavaScript.
+* Valid supported mutations update the shared local state.
+* Affected website pages reflect those mutations.
+* The two existing views reflect their underlying data.
+* Unsupported Oracle operations fail clearly.
+* The console does not falsely claim to connect to Oracle.
+* Employees have current positions and hierarchy metadata where applicable.
+* HR can promote eligible employees.
+* Level 2 and higher employees can promote eligible subordinates under the defined rules.
+* Self-promotion, upward promotion, and out-of-hierarchy promotion are rejected.
+* Promotion history is recorded.
+* The HR account directory shows the existing accounts without exposing passwords publicly.
+* Existing login behaviour remains functional.
+* Local persistence continues to work.
+* Existing tests and build checks are run, and introduced failures are fixed.
+* The final implementation report accurately describes what was tested and what remains unsupported.
+
+⸻
+
+19. FINAL RESPONSE AFTER IMPLEMENTATION
+
+After implementing the changes, provide a concise but specific report containing:
+
+1. Files changed.
+2. New features implemented.
+3. SQL commands supported.
+4. SQL commands not supported.
+5. How shared local-state updates work.
+6. How job positions and promotions work.
+7. How hierarchy permissions are enforced in the prototype.
+8. Whether the original login behaviour was preserved.
+9. Tests actually run and their results.
+10. Any existing issues discovered but not fixed.
+11. Any limitations that remain.
+
+Do not provide generic claims such as “everything works perfectly” without test evidence.
+
+Do not claim that actual Oracle SQL*Plus is connected.
+
+Do not claim that the site can synchronise with the Oracle database without a backend.
+
+Do not claim that a frontend-only hierarchy permission system is production-grade security.
+
+The priority is a stable, consistent, functional upgrade of my existing project, not an impressive-looking but incomplete demonstration.
+
+Begin by inspecting the existing codebase and the complete supplied SQL PDF, then implement the changes in the existing application.

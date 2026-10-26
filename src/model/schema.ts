@@ -129,6 +129,53 @@ export interface ErInterview {
 }
 
 /**
+ * Frontend-only Organisational Hierarchy Level (1 to 5)
+ */
+export type HierarchyLevel = 1 | 2 | 3 | 4 | 5;
+
+export const HIERARCHY_LEVEL_LABELS: Record<HierarchyLevel, string> = {
+  1: 'Level 1 · Individual Contributor',
+  2: 'Level 2 · Senior Employee / Team Lead',
+  3: 'Level 3 · Manager',
+  4: 'Level 4 · Senior Manager / Department Leader',
+  5: 'Level 5 · Executive',
+};
+
+/**
+ * Frontend-only Salary Adjustment Record for the Employee Profile Visual Timeline
+ */
+export interface SalaryAdjustmentRecord {
+  id: string;
+  employeeId: number;
+  date: string; // ISO YYYY-MM-DD or timestamp
+  previousSalary: number;
+  newSalary: number;
+  percentageIncrease: number; // e.g. 15.38 for +15.38%
+  authorizedBy: string; // Display name of HR or promoting manager
+  authorizedByUsername: string;
+  reason?: string;
+}
+
+/**
+ * Frontend-only Promotion Record
+ */
+export interface PromotionRecord {
+  id: string;
+  employeeId: number;
+  employeeName: string;
+  previousDesignation: string;
+  newDesignation: string;
+  previousLevel: HierarchyLevel;
+  newLevel: HierarchyLevel;
+  previousSalary: number;
+  newSalary: number;
+  authorizedBy: string;
+  authorizedByUsername: string;
+  timestamp: string;
+  notes?: string;
+}
+
+/**
  * CREATE TABLE ER_EMPLOYEE
  */
 export interface ErEmployee {
@@ -142,6 +189,16 @@ export interface ErEmployee {
   /** Optional frontend-only department override when HR reassigns an employee's department directly */
   _deptIdOverride?: number;
   _origin?: 'SQL_PROC' | 'LOCAL_DEMO';
+  /** Frontend-only hierarchy level (1-5) */
+  _hierarchyLevel?: HierarchyLevel;
+  /** Frontend-only reporting manager employee ID */
+  _managerEmployeeId?: number | null;
+  /** Frontend-only promotion history */
+  _promotionHistory?: PromotionRecord[];
+  /** Frontend-only visual timeline of salary adjustments */
+  _salaryHistory?: SalaryAdjustmentRecord[];
+  /** Frontend-only last promotion date */
+  _lastPromotionDate?: string | null;
 }
 
 /**
@@ -216,6 +273,13 @@ export interface EnrichedEmployee extends ErEmployee {
   JOB_TITLE: string;
   DEPT_ID: number;
   DEPT_NAME: string;
+  HIERARCHY_LEVEL: HierarchyLevel;
+  HIERARCHY_LABEL: string;
+  MANAGER_EMPLOYEE_ID: number | null;
+  MANAGER_NAME: string | null;
+  DIRECT_REPORTS_COUNT: number;
+  PROMOTION_HISTORY: PromotionRecord[];
+  SALARY_HISTORY: SalaryAdjustmentRecord[];
 }
 
 /**
@@ -231,12 +295,15 @@ export interface LocalActivityLog {
     | 'STATUS_AUDIT'
     | 'INTERVIEW'
     | 'EMPLOYEE'
+    | 'PROMOTION'
+    | 'SQL_CONSOLE'
     | 'HIRE'
     | 'DEPARTMENT'
     | 'SYSTEM';
   title: string;
   description: string;
   sqlEquivalent?: string;
+  entity?: string;
 }
 
 /**
@@ -267,4 +334,6 @@ export interface RecruitmentDatabaseState {
   activities: LocalActivityLog[];
   resumes: CandidateResumeRecord[];
   accounts: PrototypeAccount[];
+  /** Frontend-only configurable list of organisation position titles */
+  positionTitles?: string[];
 }

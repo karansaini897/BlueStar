@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import { createInitialDatabaseState } from './seedData';
 import {
   addCandidate,
+  addPositionTitle,
   applyForJob,
   calculateDashboardMetrics,
+  calculatePercentageIncrease,
   createDepartment,
   createEmployeeDirect,
   createJob,
@@ -13,6 +15,7 @@ import {
   deleteJob,
   generateCsvContent,
   hireCandidate,
+  promoteEmployee,
   registerCandidateWorkflow,
   scheduleInterview,
   selectCandidateApplicationView,
@@ -20,9 +23,14 @@ import {
   selectEnrichedEmployees,
   updateApplicationStatus,
   updateEmployee,
+  updateEmployeeHierarchy,
   updateInterviewFeedback,
   validatePdfResumeFile,
 } from './operations';
+import {
+  createSqlSessionState,
+  executeSingleSqlStatement,
+} from './sqlInterpreter';
 
 test('initial SQL seed state matches MiniProject Code.pdf counts, metrics, and role assignments', () => {
   const state = createInitialDatabaseState();
@@ -240,7 +248,7 @@ test('ER_HIRE_CANDIDATE atomically updates application, creates employee, record
   assert.equal(repeatHire.errorCode, -20020);
 });
 
-test('HR can edit employee salary, department, designation, and status, and delete employee after confirmation', () => {
+test('HR can edit employee salary, department, designation, and status, recording a salary adjustment entry with percentage increase', () => {
   const state = createInitialDatabaseState();
   const validEmp = createEmployeeDirect(state, {
     APPLICATION_ID: 5006,
@@ -255,20 +263,33 @@ test('HR can edit employee salary, department, designation, and status, and dele
   const updatedRes = updateEmployee(validEmp.state, empId, {
     DESIGNATION: 'Lead Data Engineer',
     JOINING_DATE: '2026-10-20',
-    ANNUAL_SALARY: 820000,
+    ANNUAL_SALARY: 812500, // +25.0% increase
     EMPLOYMENT_STATUS: 'INACTIVE',
     DEPT_ID: 4, // Reassign to Data Science
     PHONE: '9000099999',
+    AUTHORIZED_BY: 'Karan Anil Saini',
+    AUTHORIZED_BY_USERNAME: 'karan.saini',
+    SALARY_CHANGE_REASON: 'Annual compensation review and department transfer',
   });
   assert.equal(updatedRes.ok, true);
 
   const enriched = selectEnrichedEmployees(updatedRes.state);
   const target = enriched.find((e) => e.EMPLOYEE_ID === empId);
   assert.equal(target?.EMPLOYMENT_STATUS, 'INACTIVE');
-  assert.equal(target?.ANNUAL_SALARY, 820000);
+  assert.equal(target?.ANNUAL_SALARY, 812500);
   assert.equal(target?.DEPT_ID, 4);
   assert.equal(target?.DEPT_NAME, 'Data Science');
   assert.equal(target?.PHONE, '9000099999');
+
+  // Verify visual salary adjustment timeline entry recorded date, percentage increase (+25%), and HR authorizer
+  const salTimeline = target?.SALARY_HISTORY ?? [];
+  assert.equal(salTimeline.length, 2);
+  const latestSal = salTimeline[salTimeline.length - 1];
+  assert.equal(latestSal.previousSalary, 650000);
+  assert.equal(latestSal.newSalary, 812500);
+  assert.equal(latestSal.percentageIncrease, 25);
+  assert.equal(latestSal.authorizedBy, 'Karan Anil Saini');
+  assert.equal(latestSal.authorizedByUsername, 'karan.saini');
 
   const delRes = deleteEmployee(updatedRes.state, empId);
   assert.equal(delRes.ok, true);
@@ -305,3 +326,385 @@ test('Department creation and deletion protection', () => {
   const allowedDelete = deleteDepartment(created.state, newDeptId);
   assert.equal(allowedDelete.ok, true);
 });
+
+test('Employee Hierarchy, Reporting Relationships, and Promotion Permission Rules (All 13 Scenarios)', () => {
+  let state = createInitialDatabaseState();
+
+  // Add Position Title test
+  const posRes = addPositionTitle(state, 'Principal Architect');
+  assert.equal(posRes.ok, true);
+  state = posRes.state;
+
+  // Create Employee #2 (Yug Prajapati, Cand 1006, App 5006) as Level 1 reporting to Employee #1 (Diksha, Level 2)
+  const emp2Res = createEmployeeDirect(state, {
+    APPLICATION_ID: 5006,
+    CANDIDATE_ID: 1006,
+    DESIGNATION: 'Software Developer',
+    JOINING_DATE: '2026-10-20',
+    ANNUAL_SALARY: 500000,
+    HIERARCHY_LEVEL: 1,
+    MANAGER_EMPLOYEE_ID: 1,
+  });
+  assert.equal(emp2Res.ok, true);
+  state = emp2Res.state;
+
+  // Hire Candidate #1005 (Gauri Sardal, App 5005) as Employee #3 at Level 1 reporting to Employee #2
+  const emp3Res = hireCandidate(state, {
+    APPLICATION_ID: 5005,
+    DESIGNATION: 'Financial Analyst',
+    ANNUAL_SALARY: 450000,
+    HIERARCHY_LEVEL: 1,
+    MANAGER_EMPLOYEE_ID: 2,
+  });
+  assert.equal(emp3Res.ok, true);
+  state = emp3Res.state;
+
+  // Scenario 1: HR can promote any eligible employee (Promote Employee #1 Diksha from Level 2 to Level 3 Manager)
+  const hrPromo = promoteEmployee(state, {
+    employeeId: 1,
+    newDesignation: 'Software Engineering Manager',
+    newLevel: 3,
+    newSalary: 750000,
+    notes: 'Promoted to Engineering Manager by HR',
+    actorUsername: 'karan.saini',
+  });
+  assert.equal(hrPromo.ok, true);
+  state = hrPromo.state;
+  const emp1After = state.employees.find((e) => e.EMPLOYEE_ID === 1)!;
+  assert.equal(emp1After._hierarchyLevel, 3);
+  assert.equal(emp1After.DESIGNATION, 'Software Engineering Manager');
+  assert.equal(emp1After._promotionHistory?.length, 2);
+  assert.equal(
+    emp1After._salaryHistory?.[emp1After._salaryHistory.length - 1]?.percentageIncrease,
+    calculatePercentageIncrease(600000, 750000)
+  );
+
+  // Scenario 2: A Level 1 employee (Yug, Employee #2) cannot promote another employee (Employee #3)
+  const lvl1PromoAttempt = promoteEmployee(state, {
+    employeeId: 3,
+    newDesignation: 'Senior Financial Analyst',
+    newLevel: 2,
+    actorUsername: 'yug.prajapati',
+  });
+  assert.equal(lvl1PromoAttempt.ok, false);
+
+  // Scenario 3 & 4: A Level 3 manager (Diksha, Employee #1) can promote an eligible Level 1 subordinate (Yug, Employee #2) to Level 2
+  const lvl3PromotesSub = promoteEmployee(state, {
+    employeeId: 2,
+    newDesignation: 'Senior Software Developer',
+    newLevel: 2,
+    newSalary: 600000,
+    notes: 'Promoted to Team Lead by Manager',
+    actorUsername: 'diksha.rajwani',
+  });
+  assert.equal(lvl3PromotesSub.ok, true);
+  state = lvl3PromotesSub.state;
+  assert.equal(state.employees.find((e) => e.EMPLOYEE_ID === 2)?._hierarchyLevel, 2);
+
+  // Now Yug (Employee #2) is Level 2, and Employee #3 (Gauri, Level 1) reports to Yug.
+  // Scenario 8: A Level 2 manager (Yug) cannot promote subordinate #3 to Level 2 (manager's own level) or above
+  const exceedLevelAttempt = promoteEmployee(state, {
+    employeeId: 3,
+    newDesignation: 'Finance Manager',
+    newLevel: 2,
+    actorUsername: 'yug.prajapati',
+  });
+  assert.equal(exceedLevelAttempt.ok, false);
+
+  // But Yug (Level 2) CAN promote subordinate #3 within Level 1 (new position title / salary increase)
+  const lvl2ValidPromo = promoteEmployee(state, {
+    employeeId: 3,
+    newDesignation: 'Senior Financial Analyst',
+    newLevel: 1,
+    newSalary: 500000,
+    actorUsername: 'yug.prajapati',
+  });
+  assert.equal(lvl2ValidPromo.ok, true);
+  state = lvl2ValidPromo.state;
+
+  // Scenario 5: An employee cannot promote themselves
+  const selfPromo = promoteEmployee(state, {
+    employeeId: 1,
+    newDesignation: 'VP Engineering',
+    newLevel: 4,
+    actorUsername: 'diksha.rajwani',
+  });
+  assert.equal(selfPromo.ok, false);
+
+  // Scenario 6: An employee (Yug, #2) cannot promote their manager (Diksha, #1)
+  const promoteManagerAttempt = promoteEmployee(state, {
+    employeeId: 1,
+    newDesignation: 'Director',
+    newLevel: 4,
+    actorUsername: 'yug.prajapati',
+  });
+  assert.equal(promoteManagerAttempt.ok, false);
+
+  // Scenario 7: An employee cannot promote someone outside their reporting hierarchy
+  // Remove Employee #3 from reporting to #2 (set manager to null via HR)
+  const detachRes = updateEmployeeHierarchy(state, {
+    employeeId: 3,
+    hierarchyLevel: 1,
+    managerEmployeeId: null,
+    actorUsername: 'karan.saini',
+  });
+  assert.equal(detachRes.ok, true);
+  state = detachRes.state;
+
+  const outOfHierarchyAttempt = promoteEmployee(state, {
+    employeeId: 3,
+    newDesignation: 'Lead Analyst',
+    newLevel: 2,
+    actorUsername: 'diksha.rajwani',
+  });
+  assert.equal(outOfHierarchyAttempt.ok, false);
+
+  // Scenario 9 & 10: Invalid reporting relationship (non-existent manager or circular reporting hierarchy) is rejected
+  const nonExistentMgr = updateEmployeeHierarchy(state, {
+    employeeId: 1,
+    hierarchyLevel: 3,
+    managerEmployeeId: 999,
+    actorUsername: 'karan.saini',
+  });
+  assert.equal(nonExistentMgr.ok, false);
+
+  // Employee #2 reports to Employee #1. Attempting to make Employee #1 report to Employee #2 creates a cycle!
+  const circularAttempt = updateEmployeeHierarchy(state, {
+    employeeId: 1,
+    hierarchyLevel: 3,
+    managerEmployeeId: 2,
+    actorUsername: 'karan.saini',
+  });
+  assert.equal(circularAttempt.ok, false);
+
+  // Self-reporting is also rejected
+  const selfReportAttempt = updateEmployeeHierarchy(state, {
+    employeeId: 1,
+    hierarchyLevel: 3,
+    managerEmployeeId: 1,
+    actorUsername: 'karan.saini',
+  });
+  assert.equal(selfReportAttempt.ok, false);
+
+  // Scenario 11: Unauthorised candidate user cannot invoke promotion or hierarchy update directly
+  const candPromoAttempt = promoteEmployee(state, {
+    employeeId: 2,
+    newDesignation: 'Director',
+    newLevel: 3,
+    actorUsername: 'chahat.tekwani',
+  });
+  assert.equal(candPromoAttempt.ok, false);
+
+  // Scenario 12 & 13: Verify promotion history recorded successful changes and failed promotions left state unchanged
+  const finalEmp2 = state.employees.find((e) => e.EMPLOYEE_ID === 2)!;
+  assert.equal(finalEmp2.DESIGNATION, 'Senior Software Developer');
+  assert.equal(finalEmp2._promotionHistory?.length, 1);
+  assert.equal(finalEmp2._promotionHistory?.[0].authorizedByUsername, 'diksha.rajwani');
+});
+
+test('SQL Interpreter: All 24 Required SQL*Plus Simulation Scenarios', () => {
+  const initialState = createInitialDatabaseState();
+  let session = createSqlSessionState(initialState, 'KARAN.SAINI');
+
+  // 1. SELECT * FROM ER_DEPARTMENT;
+  let res = executeSingleSqlStatement('SELECT * FROM ER_DEPARTMENT;', session);
+  assert.equal(res.ok, true);
+  assert.equal(res.rows?.length, 7);
+
+  // 2. SELECT * FROM ER_JOB;
+  res = executeSingleSqlStatement('SELECT * FROM ER_JOB;', session);
+  assert.equal(res.ok, true);
+  assert.equal(res.rows?.length, 7);
+
+  // 3. SELECT * FROM ER_CANDIDATE;
+  res = executeSingleSqlStatement('SELECT * FROM ER_CANDIDATE;', session);
+  assert.equal(res.ok, true);
+  assert.equal(res.rows?.length, 12);
+
+  // 4. SELECT * FROM ER_APPLICATION;
+  res = executeSingleSqlStatement('SELECT * FROM ER_APPLICATION;', session);
+  assert.equal(res.ok, true);
+  assert.equal(res.rows?.length, 12);
+
+  // 5. SELECT * FROM ER_EMPLOYEE;
+  res = executeSingleSqlStatement('SELECT * FROM ER_EMPLOYEE;', session);
+  assert.equal(res.ok, true);
+  assert.equal(res.rows?.length, 1);
+
+  // 6. DESC ER_CANDIDATE;
+  res = executeSingleSqlStatement('DESC ER_CANDIDATE;', session);
+  assert.equal(res.ok, true);
+  assert.equal(res.rows?.length, 7);
+
+  // 7. SHOW TABLES;
+  res = executeSingleSqlStatement('SHOW TABLES;', session);
+  assert.equal(res.ok, true);
+  assert.equal(res.rows?.length, 9);
+
+  // 8. Valid SELECT with WHERE clause
+  res = executeSingleSqlStatement(
+    "SELECT JOB_ID, JOB_TITLE, JOB_STATUS FROM ER_JOB WHERE JOB_STATUS = 'OPEN' AND VACANCIES >= 3;",
+    session
+  );
+  assert.equal(res.ok, true);
+  assert.equal(res.rows?.length, 4);
+
+  // 9. Valid ORDER BY query
+  res = executeSingleSqlStatement(
+    'SELECT DEPT_ID, DEPT_NAME FROM ER_DEPARTMENT ORDER BY DEPT_ID DESC;',
+    session
+  );
+  assert.equal(res.ok, true);
+  assert.equal(res.rows?.[0]?.DEPT_ID, 7);
+
+  // 10. Valid INSERT
+  res = executeSingleSqlStatement(
+    "INSERT INTO ER_DEPARTMENT (DEPT_ID, DEPT_NAME) VALUES (8, 'Quality Assurance');",
+    session
+  );
+  assert.equal(res.ok, true);
+  assert.equal(res.rowsAffected, 1);
+  session = res.session;
+  assert.equal(session.uncommittedCount, 1);
+
+  // 11. Valid UPDATE
+  res = executeSingleSqlStatement(
+    "UPDATE ER_JOB SET JOB_TITLE = 'Senior Software Developer' WHERE JOB_ID = 102;",
+    session
+  );
+  assert.equal(res.ok, true);
+  assert.equal(res.rowsAffected, 1);
+  session = res.session;
+
+  // 12. Valid DELETE with confirmation check first, then confirmed execution
+  const unconfirmedDel = executeSingleSqlStatement(
+    'DELETE FROM ER_DEPARTMENT WHERE DEPT_ID = 8;',
+    session
+  );
+  assert.equal(unconfirmedDel.ok, false);
+  assert.equal(unconfirmedDel.requiresConfirmation, true);
+
+  const confirmedDel = executeSingleSqlStatement(
+    'DELETE FROM ER_DEPARTMENT WHERE DEPT_ID = 8;',
+    session,
+    { confirmedDelete: true }
+  );
+  assert.equal(confirmedDel.ok, true);
+  assert.equal(confirmedDel.rowsAffected, 1);
+  session = confirmedDel.session;
+
+  // Re-insert Department 8 so we can test COMMIT & visibility
+  res = executeSingleSqlStatement(
+    "INSERT INTO ER_DEPARTMENT (DEPT_ID, DEPT_NAME) VALUES (8, 'Quality Assurance');",
+    session
+  );
+  assert.equal(res.ok, true);
+  session = res.session;
+
+  // 13. Invalid table name
+  const badTable = executeSingleSqlStatement('SELECT * FROM ER_NON_EXISTENT;', session);
+  assert.equal(badTable.ok, false);
+  assert.equal(badTable.errorCode, 'ORA-SIM-00942');
+
+  // 14. Invalid column name
+  const badCol = executeSingleSqlStatement('SELECT BAD_COLUMN FROM ER_JOB;', session);
+  assert.equal(badCol.ok, false);
+  assert.equal(badCol.errorCode, 'ORA-SIM-00904');
+
+  // 15. Duplicate primary key
+  const dupPk = executeSingleSqlStatement(
+    "INSERT INTO ER_DEPARTMENT VALUES (1, 'Duplicate HR');",
+    session
+  );
+  assert.equal(dupPk.ok, false);
+  assert.equal(dupPk.errorCode, 'ORA-SIM-00001');
+
+  // 16. Invalid foreign key
+  const badFk = executeSingleSqlStatement(
+    "INSERT INTO ER_JOB (JOB_ID, JOB_TITLE, DEPT_ID, VACANCIES) VALUES (199, 'Ghost Job', 999, 1);",
+    session
+  );
+  assert.equal(badFk.ok, false);
+  assert.equal(badFk.errorCode, 'ORA-SIM-02291');
+
+  // 17. Invalid status value
+  const badStatus = executeSingleSqlStatement(
+    "UPDATE ER_APPLICATION SET APPLICATION_STATUS = 'PENDING_INVALID' WHERE APPLICATION_ID = 5001;",
+    session
+  );
+  assert.equal(badStatus.ok, false);
+  assert.equal(badStatus.errorCode, 'ORA-SIM-02290');
+
+  // 18. Unsupported command
+  const unsupportedCmd = executeSingleSqlStatement('DROP TABLE ER_DEPARTMENT;', session);
+  assert.equal(unsupportedCmd.ok, false);
+  assert.equal(unsupportedCmd.errorCode, 'ORA-SIM-00900');
+
+  // 19. COMMIT
+  const commitRes = executeSingleSqlStatement('COMMIT;', session);
+  assert.equal(commitRes.ok, true);
+  assert.equal(commitRes.didCommitToSharedState, true);
+  session = commitRes.session;
+  assert.equal(session.uncommittedCount, 0);
+  assert.equal(session.committedState.departments.length, 8);
+
+  // 20. ROLLBACK (stage an update, then rollback and verify committed state is untouched)
+  const tempUpdate = executeSingleSqlStatement(
+    "UPDATE ER_JOB SET JOB_STATUS = 'CLOSED' WHERE JOB_ID = 101;",
+    session
+  );
+  assert.equal(tempUpdate.ok, true);
+  session = tempUpdate.session;
+  assert.equal(
+    session.workingState.jobs.find((j) => j.JOB_ID === 101)?.JOB_STATUS,
+    'CLOSED'
+  );
+
+  const rollbackRes = executeSingleSqlStatement('ROLLBACK;', session);
+  assert.equal(rollbackRes.ok, true);
+  session = rollbackRes.session;
+  assert.equal(
+    session.workingState.jobs.find((j) => j.JOB_ID === 101)?.JOB_STATUS,
+    'OPEN'
+  );
+  // Previously committed Department 8 is still present!
+  assert.equal(session.workingState.departments.length, 8);
+
+  // 21. Supported stored-procedure simulation (EXEC ER_HIRE_CANDIDATE)
+  const procRes = executeSingleSqlStatement(
+    "EXEC ER_HIRE_CANDIDATE(5005, 'Financial Analyst', 560000);",
+    session
+  );
+  assert.equal(procRes.ok, true);
+  session = procRes.session;
+  assert.equal(session.workingState.employees.length, 2);
+
+  // 22. Rejected unsupported stored procedure
+  const badProc = executeSingleSqlStatement('EXEC ER_DROP_ALL_DATA(123);', session);
+  assert.equal(badProc.ok, false);
+  assert.equal(badProc.errorCode, 'ORA-SIM-06550');
+
+  // 23. Query against each supported view (ER_V_CANDIDATE_APPLICATION and ER_V_INTERVIEW_DETAILS)
+  const view1 = executeSingleSqlStatement(
+    'SELECT CANDIDATE_ID, FULL_NAME, JOB_TITLE, APPLICATION_STATUS FROM ER_V_CANDIDATE_APPLICATION WHERE APPLICATION_ID = 5005;',
+    session
+  );
+  assert.equal(view1.ok, true);
+  assert.equal(view1.rows?.[0]?.APPLICATION_STATUS, 'HIRED');
+
+  const view2 = executeSingleSqlStatement(
+    'SELECT * FROM ER_V_INTERVIEW_DETAILS;',
+    session
+  );
+  assert.equal(view2.ok, true);
+  assert.equal(view2.rows?.length, 3);
+
+  // 24. Query after a successful mutation to confirm the changed data is visible
+  const verifyJob = executeSingleSqlStatement(
+    'SELECT JOB_ID, JOB_TITLE FROM ER_JOB WHERE JOB_ID = 102;',
+    session
+  );
+  assert.equal(verifyJob.ok, true);
+  assert.equal(verifyJob.rows?.[0]?.JOB_TITLE, 'Senior Software Developer');
+});
+

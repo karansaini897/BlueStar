@@ -14,7 +14,9 @@ import {
   Moon,
   RefreshCw,
   Settings,
+  ShieldCheck,
   Sun,
+  Terminal,
   UserCheck,
   UserCircle2,
   Users,
@@ -151,6 +153,17 @@ export const AppShell: React.FC<AppShellProps> = ({
         icon: Building2,
         badgeCount: db.departments.length,
       },
+      {
+        path: '/sql-console',
+        label: 'SQL Console',
+        icon: Terminal,
+      },
+      {
+        path: '/accounts',
+        label: 'Account Directory',
+        icon: ShieldCheck,
+        badgeCount: db.accounts.length,
+      },
       { path: '/reports', label: 'Reports & Audit', icon: BarChart3 },
       { path: '/settings', label: 'Settings', icon: Settings },
     ];
@@ -163,6 +176,7 @@ export const AppShell: React.FC<AppShellProps> = ({
     metrics.openJobs,
     db.interviews.length,
     db.departments.length,
+    db.accounts.length,
   ]);
 
   const handleNavClick = (path: string) => {

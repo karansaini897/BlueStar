@@ -155,13 +155,13 @@ export const CandidateWorkspacePage: React.FC<CandidateWorkspacePageProps> = ({ 
     const file = e.target.files?.[0];
     if (!file || !myCandidate) return;
 
-    const err = validatePdfResumeFile({
+    const validationRes = validatePdfResumeFile({
       name: file.name,
       size: file.size,
       type: file.type,
     });
-    if (err) {
-      setResumeError(err);
+    if (!validationRes.ok) {
+      setResumeError(validationRes.error ?? 'Invalid PDF file.');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }

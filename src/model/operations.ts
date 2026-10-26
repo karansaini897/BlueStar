@@ -17,12 +17,17 @@ import {
   ErJob,
   ErVCandidateApplication,
   ErVInterviewDetails,
+  HIERARCHY_LEVEL_LABELS,
+  HierarchyLevel,
   InterviewMode,
   InterviewStatus,
   JobStatus,
   LocalActivityLog,
+  PromotionRecord,
   PrototypeAccount,
   RecruitmentDatabaseState,
+  SalaryAdjustmentRecord,
+  UserRole,
 } from './schema';
 
 export interface OperationResult<T = RecruitmentDatabaseState> {
@@ -94,18 +99,29 @@ function createActivity(
 /**
  * Derive standard firstname.lastname username from full name or first/last parts
  */
-export function buildPrototypeUsername(firstName: string, lastName: string): string {
-  const cleanFirst = (firstName ?? '')
+export function buildPrototypeUsername(firstOrFullName: string, lastName?: string): string {
+  if (lastName !== undefined) {
+    const cleanFirst = (firstOrFullName ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+    const cleanLast = (lastName ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+    if (!cleanFirst && !cleanLast) return '';
+    if (!cleanLast) return cleanFirst;
+    return `${cleanFirst}.${cleanLast}`;
+  }
+  const parts = (firstOrFullName ?? '')
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');
-  const cleanLast = (lastName ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');
-  if (!cleanFirst && !cleanLast) return '';
-  if (!cleanLast) return cleanFirst;
-  return `${cleanFirst}.${cleanLast}`;
+    .split(/\s+/)
+    .map((p) => p.replace(/[^a-z0-9]/g, ''))
+    .filter(Boolean);
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]}.${parts[parts.length - 1]}`;
 }
 
 /**
@@ -257,30 +273,47 @@ export function addCandidate(
  * Complete Candidate Registration + Optional Job Application + PDF Resume Submission
  */
 export interface RegisterCandidateWorkflowInput {
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
+  FULL_NAME?: string;
   customUsername?: string;
-  email: string;
+  email?: string;
+  EMAIL?: string;
   phone?: string | null;
+  PHONE?: string | null;
   qualification?: string | null;
-  experienceYears: number;
+  QUALIFICATION?: string | null;
+  experienceYears?: number;
+  EXPERIENCE_YEARS?: number;
   skills?: string;
   jobId?: number | null;
+  JOB_ID?: number | null;
   remarks?: string | null;
+  REMARKS?: string | null;
   resume?: {
     fileName: string;
     fileSize: number;
     mimeType: string;
+    uploadedAt?: string;
     dataUrl?: string | null;
   } | null;
 }
+
+export type RegisterCandidateInput = RegisterCandidateWorkflowInput;
 
 export function registerCandidateWorkflow(
   state: RecruitmentDatabaseState,
   input: RegisterCandidateWorkflowInput
 ): OperationResult {
-  const first = (input.firstName ?? '').trim();
-  const last = (input.lastName ?? '').trim();
+  const fullNameRaw = (
+    input.FULL_NAME?.trim() || `${input.firstName ?? ''} ${input.lastName ?? ''}`.trim()
+  ).trim();
+  const nameTokens = fullNameRaw.split(/\s+/).filter(Boolean);
+  const first = (input.firstName ?? nameTokens[0] ?? '').trim();
+  const last = (
+    input.lastName ?? (nameTokens.length > 1 ? nameTokens.slice(1).join(' ') : '')
+  ).trim();
+
   if (!first || !last) {
     return {
       ok: false,
@@ -323,12 +356,20 @@ export function registerCandidateWorkflow(
   }
 
   const fullName = `${first} ${last}`.trim();
+  const emailVal = (input.email ?? input.EMAIL ?? '').trim();
+  const phoneVal = input.phone !== undefined ? input.phone : input.PHONE;
+  const qualVal = input.qualification !== undefined ? input.qualification : input.QUALIFICATION;
+  const expVal =
+    input.experienceYears !== undefined ? input.experienceYears : (input.EXPERIENCE_YEARS ?? 0);
+  const jobIdVal = input.jobId !== undefined ? input.jobId : input.JOB_ID;
+  const remarksVal = input.remarks !== undefined ? input.remarks : input.REMARKS;
+
   const candRes = addCandidate(state, {
     FULL_NAME: fullName,
-    EMAIL: input.email,
-    PHONE: input.phone,
-    QUALIFICATION: input.qualification,
-    EXPERIENCE_YEARS: input.experienceYears,
+    EMAIL: emailVal,
+    PHONE: phoneVal,
+    QUALIFICATION: qualVal,
+    EXPERIENCE_YEARS: expVal,
     _skills: input.skills,
   });
 
@@ -346,11 +387,11 @@ export function registerCandidateWorkflow(
   };
 
   let createdAppId: number | undefined;
-  if (input.jobId) {
+  if (jobIdVal) {
     const appRes = applyForJob(nextState, {
       CANDIDATE_ID: newCandId,
-      JOB_ID: Number(input.jobId),
-      REMARKS: input.remarks || 'Submitted during candidate registration',
+      JOB_ID: Number(jobIdVal),
+      REMARKS: remarksVal || 'Submitted during candidate registration',
     });
     if (!appRes.ok) {
       return appRes;
@@ -367,7 +408,7 @@ export function registerCandidateWorkflow(
       fileName: input.resume.fileName,
       fileSize: input.resume.fileSize,
       mimeType: input.resume.mimeType || 'application/pdf',
-      uploadedAt: new Date().toISOString(),
+      uploadedAt: input.resume.uploadedAt || new Date().toISOString(),
       dataUrl: input.resume.dataUrl ?? null,
     };
     nextState = {
@@ -394,8 +435,8 @@ export function registerCandidateWorkflow(
  */
 export function saveCandidateResume(
   state: RecruitmentDatabaseState,
-  candidateId: number,
-  file: {
+  candidateIdOrRecord: number | CandidateResumeRecord,
+  file?: {
     fileName: string;
     fileSize: number;
     mimeType: string;
@@ -403,15 +444,30 @@ export function saveCandidateResume(
     applicationId?: number;
   }
 ): OperationResult {
+  const candidateId =
+    typeof candidateIdOrRecord === 'number'
+      ? candidateIdOrRecord
+      : candidateIdOrRecord.CANDIDATE_ID;
+  const fileObj =
+    typeof candidateIdOrRecord === 'number'
+      ? file!
+      : {
+          fileName: candidateIdOrRecord.fileName,
+          fileSize: candidateIdOrRecord.fileSize,
+          mimeType: candidateIdOrRecord.mimeType,
+          dataUrl: candidateIdOrRecord.dataUrl,
+          applicationId: candidateIdOrRecord.APPLICATION_ID,
+        };
+
   const candidate = state.candidates.find((c) => c.CANDIDATE_ID === candidateId);
   if (!candidate) {
     return { ok: false, state, error: `Candidate #${candidateId} does not exist.` };
   }
 
   const check = validatePdfResumeFile({
-    name: file.fileName,
-    size: file.fileSize,
-    type: file.mimeType,
+    name: fileObj.fileName,
+    size: fileObj.fileSize,
+    type: fileObj.mimeType,
   });
   if (!check.ok) {
     return { ok: false, state, error: check.error };
@@ -419,23 +475,23 @@ export function saveCandidateResume(
 
   const record: CandidateResumeRecord = {
     CANDIDATE_ID: candidateId,
-    APPLICATION_ID: file.applicationId,
-    fileName: file.fileName,
-    fileSize: file.fileSize,
+    APPLICATION_ID: fileObj.applicationId,
+    fileName: fileObj.fileName,
+    fileSize: fileObj.fileSize,
     mimeType: 'application/pdf',
     uploadedAt: new Date().toISOString(),
-    dataUrl: file.dataUrl ?? null,
+    dataUrl: fileObj.dataUrl ?? null,
   };
 
   const activity = createActivity(
     'CANDIDATE',
     `Resume Uploaded (${candidate.FULL_NAME})`,
-    `Local PDF resume '${file.fileName}' (${Math.round(file.fileSize / 1024)} KB) attached for HR review.`
+    `Local PDF resume '${fileObj.fileName}' (${Math.round(fileObj.fileSize / 1024)} KB) attached for HR review.`
   );
 
   return {
     ok: true,
-    message: `PDF resume '${file.fileName}' saved in local prototype state.`,
+    message: `PDF resume '${fileObj.fileName}' saved in local prototype state.`,
     state: {
       ...state,
       resumes: [...(state.resumes ?? []).filter((r) => r.CANDIDATE_ID !== candidateId), record],
@@ -854,7 +910,7 @@ export function updateApplicationStatus(
       const updatedWithNotes: ErApplication = {
         ...app,
         REMARKS: remarks !== undefined && remarks !== null ? remarks.trim() : app.REMARKS,
-        _hrNotes: hrNotes.trim(),
+        _hrNotes: hrNotes ? hrNotes.trim() : null,
       };
       return {
         ok: true,
@@ -1098,6 +1154,469 @@ export function updateInterviewFeedback(
 }
 
 /**
+ * Calculate percentage increase between two salaries (rounded to 2 decimal places)
+ */
+export function calculatePercentageIncrease(previousSalary: number, newSalary: number): number {
+  if (!previousSalary || previousSalary <= 0) return 0;
+  return Math.round(((newSalary - previousSalary) / previousSalary) * 10000) / 100;
+}
+
+/**
+ * Check if targetEmpId is a direct or indirect subordinate of managerEmpId
+ */
+export function isSubordinateOf(
+  employees: ErEmployee[],
+  managerEmpId: number,
+  targetEmpId: number
+): boolean {
+  if (managerEmpId === targetEmpId) return false;
+  const empMap = new Map(employees.map((e) => [e.EMPLOYEE_ID, e]));
+  const visited = new Set<number>();
+  let current = empMap.get(targetEmpId);
+  while (current && current._managerEmployeeId !== null && current._managerEmployeeId !== undefined) {
+    const mgrId = current._managerEmployeeId;
+    if (mgrId === managerEmpId) return true;
+    if (visited.has(mgrId)) break; // prevent infinite loop on malformed data
+    visited.add(mgrId);
+    current = empMap.get(mgrId);
+  }
+  return false;
+}
+
+/**
+ * Check if assigning proposedManagerId as manager of employeeId would create a circular reporting loop
+ */
+export function wouldCreateCircularReporting(
+  employees: ErEmployee[],
+  employeeId: number,
+  proposedManagerId: number | null | undefined
+): boolean {
+  if (proposedManagerId === null || proposedManagerId === undefined) return false;
+  if (employeeId === proposedManagerId) return true;
+  // If proposedManagerId is currently a direct or indirect subordinate of employeeId, assigning them as manager creates a cycle
+  return isSubordinateOf(employees, employeeId, proposedManagerId);
+}
+
+/**
+ * Evaluate whether actorUsername is permitted to promote targetEmployeeId (and optionally to proposedNewLevel)
+ */
+export function canActorPromoteEmployee(
+  state: RecruitmentDatabaseState,
+  actorUsername: string | null | undefined,
+  targetEmployeeId: number,
+  proposedNewLevel?: HierarchyLevel
+): {
+  allowed: boolean;
+  error?: string;
+  actorAccount?: PrototypeAccount;
+  actorEmployee?: ErEmployee;
+  actorLevel?: HierarchyLevel;
+} {
+  if (!actorUsername) {
+    return { allowed: false, error: 'Authentication required to perform a promotion.' };
+  }
+  const actorAccount = (state.accounts ?? []).find(
+    (a) => a.username.toLowerCase() === actorUsername.toLowerCase()
+  );
+  if (!actorAccount) {
+    return { allowed: false, error: `Authenticated account '${actorUsername}' was not found.` };
+  }
+
+  const targetEmp = state.employees.find((e) => e.EMPLOYEE_ID === targetEmployeeId);
+  if (!targetEmp) {
+    return { allowed: false, error: `Target employee #${targetEmployeeId} does not exist.` };
+  }
+  if (targetEmp.EMPLOYMENT_STATUS !== 'ACTIVE') {
+    return {
+      allowed: false,
+      error: `Cannot promote Employee #${targetEmployeeId} because their status is '${targetEmp.EMPLOYMENT_STATUS}'. Only ACTIVE employees can be promoted.`,
+    };
+  }
+
+  const targetCurrentLevel: HierarchyLevel = targetEmp._hierarchyLevel ?? 1;
+
+  // HR has full organisational promotion authority
+  if (actorAccount.role === 'HR') {
+    if (
+      proposedNewLevel !== undefined &&
+      (proposedNewLevel < 1 || proposedNewLevel > 5 || !Number.isInteger(proposedNewLevel))
+    ) {
+      return {
+        allowed: false,
+        error: 'Proposed hierarchy level must be an integer between 1 and 5.',
+      };
+    }
+    return { allowed: true, actorAccount };
+  }
+
+  if (actorAccount.role !== 'EMPLOYEE') {
+    return {
+      allowed: false,
+      error: 'Candidate accounts do not have permission to promote employees.',
+    };
+  }
+
+  // Locate actor's linked employee record
+  const actorEmp = state.employees.find(
+    (e) =>
+      (actorAccount.employeeId !== undefined && e.EMPLOYEE_ID === actorAccount.employeeId) ||
+      (actorAccount.candidateId !== undefined && e.CANDIDATE_ID === actorAccount.candidateId)
+  );
+  if (!actorEmp) {
+    return {
+      allowed: false,
+      error: 'Your account does not have a linked active employee record with promotion authority.',
+    };
+  }
+  if (actorEmp.EMPLOYMENT_STATUS !== 'ACTIVE') {
+    return {
+      allowed: false,
+      error: 'Inactive employees cannot authorise promotions.',
+    };
+  }
+
+  const actorLevel: HierarchyLevel = actorEmp._hierarchyLevel ?? 1;
+  if (actorEmp.EMPLOYEE_ID === targetEmployeeId) {
+    return {
+      allowed: false,
+      error: 'Permission denied: Employees cannot promote themselves.',
+    };
+  }
+  if (actorLevel < 2) {
+    return {
+      allowed: false,
+      error:
+        'Permission denied: Only employees at Hierarchy Level 2 or above may promote eligible subordinates.',
+    };
+  }
+
+  // Must be in actor's direct or indirect reporting hierarchy
+  const isSub = isSubordinateOf(state.employees, actorEmp.EMPLOYEE_ID, targetEmployeeId);
+  if (!isSub) {
+    return {
+      allowed: false,
+      error:
+        'Permission denied: You can only promote employees who report directly or indirectly to you.',
+    };
+  }
+
+  if (targetCurrentLevel >= actorLevel) {
+    return {
+      allowed: false,
+      error: `Permission denied: Target employee is at Level ${targetCurrentLevel}, which is not below your level (Level ${actorLevel}).`,
+    };
+  }
+
+  if (proposedNewLevel !== undefined) {
+    if (proposedNewLevel < 1 || proposedNewLevel > 5 || !Number.isInteger(proposedNewLevel)) {
+      return {
+        allowed: false,
+        error: 'Proposed hierarchy level must be an integer between 1 and 5.',
+      };
+    }
+    if (proposedNewLevel >= actorLevel) {
+      return {
+        allowed: false,
+        error: `Permission denied: A Level ${actorLevel} manager cannot promote a subordinate to Level ${proposedNewLevel}. Subordinate must remain strictly below Level ${actorLevel}.`,
+      };
+    }
+    if (proposedNewLevel < targetCurrentLevel) {
+      return {
+        allowed: false,
+        error: `Proposed hierarchy level (Level ${proposedNewLevel}) cannot be lower than current level (Level ${targetCurrentLevel}) during a promotion.`,
+      };
+    }
+  }
+
+  return {
+    allowed: true,
+    actorAccount,
+    actorEmployee: actorEmp,
+    actorLevel,
+  };
+}
+
+/**
+ * Add a configurable position title to state.positionTitles
+ */
+export function addPositionTitle(
+  state: RecruitmentDatabaseState,
+  titleInput: string
+): OperationResult {
+  const clean = (titleInput ?? '').trim();
+  if (!clean) {
+    return { ok: false, state, error: 'Position title cannot be empty.' };
+  }
+  if (clean.length > 100) {
+    return { ok: false, state, error: 'Position title must not exceed 100 characters.' };
+  }
+  const existing = state.positionTitles ?? [];
+  if (existing.some((t) => t.toLowerCase() === clean.toLowerCase())) {
+    return {
+      ok: false,
+      state,
+      error: `Position title '${clean}' already exists in the configured position catalogue.`,
+    };
+  }
+  const activity = createActivity(
+    'EMPLOYEE',
+    `Position Title Added`,
+    `Added '${clean}' to the organisation position catalogue.`
+  );
+  return {
+    ok: true,
+    message: `Position title '${clean}' added.`,
+    state: {
+      ...state,
+      positionTitles: [...existing, clean],
+      activities: [activity, ...state.activities],
+    },
+  };
+}
+
+/**
+ * Promote an Employee (HR or Hierarchy Level >= 2 Manager for eligible subordinates)
+ */
+export interface PromoteEmployeeInput {
+  employeeId: number;
+  newDesignation: string;
+  newLevel: HierarchyLevel;
+  newSalary?: number;
+  newManagerEmployeeId?: number | null;
+  notes?: string;
+  actorUsername: string;
+}
+
+export function promoteEmployee(
+  state: RecruitmentDatabaseState,
+  input: PromoteEmployeeInput
+): OperationResult {
+  const empId = Number(input.employeeId);
+  const newDesignation = (input.newDesignation ?? '').trim();
+  const newLevel = Number(input.newLevel) as HierarchyLevel;
+  const actorUsername = (input.actorUsername ?? '').trim();
+
+  const perm = canActorPromoteEmployee(state, actorUsername, empId, newLevel);
+  if (!perm.allowed || !perm.actorAccount) {
+    return { ok: false, state, error: perm.error || 'Promotion permission denied.' };
+  }
+
+  const targetEmp = state.employees.find((e) => e.EMPLOYEE_ID === empId)!;
+  const prevLevel: HierarchyLevel = targetEmp._hierarchyLevel ?? 1;
+
+  if (!newDesignation || newDesignation.length > 100) {
+    return {
+      ok: false,
+      state,
+      error: 'A valid new position / designation is required (1-100 characters).',
+    };
+  }
+
+  const newSalary =
+    input.newSalary !== undefined && input.newSalary !== null
+      ? Number(input.newSalary)
+      : targetEmp.ANNUAL_SALARY;
+  if (Number.isNaN(newSalary) || newSalary <= 0) {
+    return { ok: false, state, error: 'Annual salary must be a positive amount.' };
+  }
+
+  if (
+    newLevel === prevLevel &&
+    newDesignation.toLowerCase() === targetEmp.DESIGNATION.toLowerCase() &&
+    newSalary === targetEmp.ANNUAL_SALARY
+  ) {
+    return {
+      ok: false,
+      state,
+      error: 'Promotion requires a change in hierarchy level, position title, or annual salary.',
+    };
+  }
+
+  let nextManagerId =
+    input.newManagerEmployeeId !== undefined
+      ? input.newManagerEmployeeId
+      : (targetEmp._managerEmployeeId ?? null);
+
+  if (nextManagerId !== null && nextManagerId !== undefined) {
+    nextManagerId = Number(nextManagerId);
+    const mgrExists = state.employees.some((e) => e.EMPLOYEE_ID === nextManagerId);
+    if (!mgrExists) {
+      return {
+        ok: false,
+        state,
+        error: `Reporting manager Employee #${nextManagerId} does not exist.`,
+      };
+    }
+    if (wouldCreateCircularReporting(state.employees, empId, nextManagerId)) {
+      return {
+        ok: false,
+        state,
+        error:
+          'Invalid reporting relationship: An employee cannot report to themselves or to one of their own direct/indirect subordinates.',
+      };
+    }
+  }
+
+  const cand = state.candidates.find((c) => c.CANDIDATE_ID === targetEmp.CANDIDATE_ID);
+  const empName = cand?.FULL_NAME ?? `Employee #${empId}`;
+  const nowIso = new Date().toISOString();
+  const todayDate = getTodayIsoDate();
+
+  const promoRecord: PromotionRecord = {
+    id: `promo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    employeeId: empId,
+    employeeName: empName,
+    previousDesignation: targetEmp.DESIGNATION,
+    newDesignation,
+    previousLevel: prevLevel,
+    newLevel,
+    previousSalary: targetEmp.ANNUAL_SALARY,
+    newSalary: Math.round(newSalary * 100) / 100,
+    authorizedBy: perm.actorAccount.fullName,
+    authorizedByUsername: perm.actorAccount.username,
+    timestamp: nowIso,
+    notes: input.notes?.trim() || undefined,
+  };
+
+  const nextSalaryHistory = [...(targetEmp._salaryHistory ?? [])];
+  if (Math.round(newSalary * 100) / 100 !== targetEmp.ANNUAL_SALARY) {
+    const pct = calculatePercentageIncrease(
+      targetEmp.ANNUAL_SALARY,
+      Math.round(newSalary * 100) / 100
+    );
+    const salRecord: SalaryAdjustmentRecord = {
+      id: `sal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      employeeId: empId,
+      date: todayDate,
+      previousSalary: targetEmp.ANNUAL_SALARY,
+      newSalary: Math.round(newSalary * 100) / 100,
+      percentageIncrease: pct,
+      authorizedBy: perm.actorAccount.fullName,
+      authorizedByUsername: perm.actorAccount.username,
+      reason:
+        input.notes?.trim() ||
+        `Promotion from ${targetEmp.DESIGNATION} (L${prevLevel}) to ${newDesignation} (L${newLevel})`,
+    };
+    nextSalaryHistory.push(salRecord);
+  }
+
+  const updatedEmp: ErEmployee = {
+    ...targetEmp,
+    DESIGNATION: newDesignation,
+    ANNUAL_SALARY: Math.round(newSalary * 100) / 100,
+    _hierarchyLevel: newLevel,
+    _managerEmployeeId: nextManagerId,
+    _lastPromotionDate: todayDate,
+    _promotionHistory: [...(targetEmp._promotionHistory ?? []), promoRecord],
+    _salaryHistory: nextSalaryHistory,
+  };
+
+  const existingTitles = state.positionTitles ?? [];
+  const nextTitles = existingTitles.some(
+    (t) => t.toLowerCase() === newDesignation.toLowerCase()
+  )
+    ? existingTitles
+    : [...existingTitles, newDesignation];
+
+  const activity = createActivity(
+    'PROMOTION',
+    `Employee Promoted (${empName})`,
+    `${empName} (#${empId}) promoted from ${targetEmp.DESIGNATION} (Level ${prevLevel}) to ${newDesignation} (Level ${newLevel}) by ${perm.actorAccount.fullName}.`,
+    `UPDATE ER_EMPLOYEE SET DESIGNATION = '${newDesignation}', ANNUAL_SALARY = ${updatedEmp.ANNUAL_SALARY} WHERE EMPLOYEE_ID = ${empId};`
+  );
+
+  return {
+    ok: true,
+    message: `${empName} promoted to ${newDesignation} (Level ${newLevel}).`,
+    state: {
+      ...state,
+      employees: state.employees.map((e) => (e.EMPLOYEE_ID === empId ? updatedEmp : e)),
+      positionTitles: nextTitles,
+      activities: [activity, ...state.activities],
+    },
+  };
+}
+
+/**
+ * Update an Employee's Hierarchy Level and/or Reporting Manager (HR-only management action)
+ */
+export interface UpdateEmployeeHierarchyInput {
+  employeeId: number;
+  hierarchyLevel: HierarchyLevel;
+  managerEmployeeId: number | null;
+  actorUsername: string;
+}
+
+export function updateEmployeeHierarchy(
+  state: RecruitmentDatabaseState,
+  input: UpdateEmployeeHierarchyInput
+): OperationResult {
+  const actor = (state.accounts ?? []).find(
+    (a) => a.username.toLowerCase() === (input.actorUsername ?? '').trim().toLowerCase()
+  );
+  if (!actor || actor.role !== 'HR') {
+    return {
+      ok: false,
+      state,
+      error: 'Only HR accounts can directly reassign organisational hierarchy levels or reporting lines.',
+    };
+  }
+
+  const empId = Number(input.employeeId);
+  const target = state.employees.find((e) => e.EMPLOYEE_ID === empId);
+  if (!target) {
+    return { ok: false, state, error: `Employee #${empId} does not exist.` };
+  }
+
+  const level = Number(input.hierarchyLevel) as HierarchyLevel;
+  if (level < 1 || level > 5 || !Number.isInteger(level)) {
+    return { ok: false, state, error: 'Hierarchy level must be an integer from 1 to 5.' };
+  }
+
+  const mgrId =
+    input.managerEmployeeId !== null && input.managerEmployeeId !== undefined
+      ? Number(input.managerEmployeeId)
+      : null;
+
+  if (mgrId !== null) {
+    const mgrExists = state.employees.some((e) => e.EMPLOYEE_ID === mgrId);
+    if (!mgrExists) {
+      return { ok: false, state, error: `Reporting manager Employee #${mgrId} does not exist.` };
+    }
+    if (wouldCreateCircularReporting(state.employees, empId, mgrId)) {
+      return {
+        ok: false,
+        state,
+        error:
+          'Circular reporting relationship detected: An employee cannot report to themselves or to one of their own direct/indirect subordinates.',
+      };
+    }
+  }
+
+  const updated: ErEmployee = {
+    ...target,
+    _hierarchyLevel: level,
+    _managerEmployeeId: mgrId,
+  };
+
+  const activity = createActivity(
+    'EMPLOYEE',
+    `Hierarchy Updated for Employee #${empId}`,
+    `Set Hierarchy Level ${level} and Manager ${mgrId ? `Employee #${mgrId}` : 'None (Top-Level)'} by ${actor.fullName}.`
+  );
+
+  return {
+    ok: true,
+    message: `Hierarchy settings updated for Employee #${empId}.`,
+    state: {
+      ...state,
+      employees: state.employees.map((e) => (e.EMPLOYEE_ID === empId ? updated : e)),
+      activities: [activity, ...state.activities],
+    },
+  };
+}
+
+/**
  * Procedure: ER_HIRE_CANDIDATE (Pages 34-36)
  */
 export interface HireCandidateInput {
@@ -1106,6 +1625,9 @@ export interface HireCandidateInput {
   ANNUAL_SALARY: number;
   JOINING_DATE?: string;
   CHANGED_BY?: string;
+  AUTHORIZED_BY_NAME?: string;
+  HIERARCHY_LEVEL?: HierarchyLevel;
+  MANAGER_EMPLOYEE_ID?: number | null;
 }
 
 export function hireCandidate(
@@ -1116,7 +1638,8 @@ export function hireCandidate(
   const designation = (input.DESIGNATION ?? '').trim();
   const salary = Number(input.ANNUAL_SALARY);
   const joiningDate = input.JOINING_DATE?.trim() || getTodayIsoDate();
-  const changedBy = input.CHANGED_BY || 'HR_ADMIN';
+  const changedBy = input.CHANGED_BY || 'karan.saini';
+  const authorizedByName = input.AUTHORIZED_BY_NAME || 'Karan Anil Saini';
 
   const app = state.applications.find((a) => a.APPLICATION_ID === appId);
   if (!app) {
@@ -1198,15 +1721,36 @@ export function hireCandidate(
   };
 
   const newEmpId = nextEmployeeId(state.employees);
+  const roundedSalary = Math.round(salary * 100) / 100;
+  const job = state.jobs.find((j) => j.JOB_ID === app.JOB_ID);
+  const baseReferenceSalary = job?.MIN_SALARY && job.MIN_SALARY > 0 ? job.MIN_SALARY : roundedSalary;
+  const initialPct = calculatePercentageIncrease(baseReferenceSalary, roundedSalary);
+
+  const initialSalaryRecord: SalaryAdjustmentRecord = {
+    id: `sal-hire-${newEmpId}-${Date.now()}`,
+    employeeId: newEmpId,
+    date: joiningDate,
+    previousSalary: baseReferenceSalary,
+    newSalary: roundedSalary,
+    percentageIncrease: initialPct,
+    authorizedBy: authorizedByName,
+    authorizedByUsername: changedBy,
+    reason: `Initial hiring package authorised via ER_HIRE_CANDIDATE (${designation}).`,
+  };
+
   const newEmployee: ErEmployee = {
     EMPLOYEE_ID: newEmpId,
     APPLICATION_ID: appId,
     CANDIDATE_ID: app.CANDIDATE_ID,
     JOINING_DATE: joiningDate,
     DESIGNATION: designation,
-    ANNUAL_SALARY: Math.round(salary * 100) / 100,
+    ANNUAL_SALARY: roundedSalary,
     EMPLOYMENT_STATUS: 'ACTIVE',
     _origin: 'LOCAL_DEMO',
+    _hierarchyLevel: input.HIERARCHY_LEVEL ?? 1,
+    _managerEmployeeId: input.MANAGER_EMPLOYEE_ID ?? null,
+    _promotionHistory: [],
+    _salaryHistory: [initialSalaryRecord],
   };
 
   const candidate = state.candidates.find((c) => c.CANDIDATE_ID === app.CANDIDATE_ID);
@@ -1221,8 +1765,15 @@ export function hireCandidate(
   const updatedAccounts = (state.accounts ?? []).map((acc) =>
     acc.candidateId === app.CANDIDATE_ID && acc.role !== 'HR'
       ? { ...acc, role: 'EMPLOYEE' as const, employeeId: newEmpId }
-      : acc
+      : acc.candidateId === app.CANDIDATE_ID
+        ? { ...acc, employeeId: newEmpId }
+        : acc
   );
+
+  const existingTitles = state.positionTitles ?? [];
+  const nextTitles = existingTitles.some((t) => t.toLowerCase() === designation.toLowerCase())
+    ? existingTitles
+    : [...existingTitles, designation];
 
   return {
     ok: true,
@@ -1233,6 +1784,7 @@ export function hireCandidate(
       employees: [...state.employees, newEmployee],
       audits: [...state.audits, newAudit],
       accounts: updatedAccounts,
+      positionTitles: nextTitles,
       activities: [activity, ...state.activities],
     },
   };
@@ -1248,6 +1800,10 @@ export interface CreateEmployeeInput {
   JOINING_DATE: string;
   ANNUAL_SALARY: number;
   EMPLOYMENT_STATUS?: EmploymentStatus;
+  HIERARCHY_LEVEL?: HierarchyLevel;
+  MANAGER_EMPLOYEE_ID?: number | null;
+  AUTHORIZED_BY?: string;
+  AUTHORIZED_BY_USERNAME?: string;
 }
 
 export function createEmployeeDirect(
@@ -1308,22 +1864,49 @@ export function createEmployeeDirect(
   }
 
   const newEmpId = nextEmployeeId(state.employees);
+  const roundedSalary = Math.round(salary * 100) / 100;
+  const job = state.jobs.find((j) => j.JOB_ID === app.JOB_ID);
+  const baseRef = job?.MIN_SALARY && job.MIN_SALARY > 0 ? job.MIN_SALARY : roundedSalary;
+
+  const initialSalaryRecord: SalaryAdjustmentRecord = {
+    id: `sal-create-${newEmpId}-${Date.now()}`,
+    employeeId: newEmpId,
+    date: joiningDate,
+    previousSalary: baseRef,
+    newSalary: roundedSalary,
+    percentageIncrease: calculatePercentageIncrease(baseRef, roundedSalary),
+    authorizedBy: input.AUTHORIZED_BY || 'Karan Anil Saini',
+    authorizedByUsername: input.AUTHORIZED_BY_USERNAME || 'karan.saini',
+    reason: `Initial employee record creation (${designation}).`,
+  };
+
   const newEmployee: ErEmployee = {
     EMPLOYEE_ID: newEmpId,
     APPLICATION_ID: appId,
     CANDIDATE_ID: candId,
     JOINING_DATE: joiningDate,
     DESIGNATION: designation,
-    ANNUAL_SALARY: Math.round(salary * 100) / 100,
+    ANNUAL_SALARY: roundedSalary,
     EMPLOYMENT_STATUS: status,
     _origin: 'LOCAL_DEMO',
+    _hierarchyLevel: input.HIERARCHY_LEVEL ?? 1,
+    _managerEmployeeId: input.MANAGER_EMPLOYEE_ID ?? null,
+    _promotionHistory: [],
+    _salaryHistory: [initialSalaryRecord],
   };
 
   const updatedAccounts = (state.accounts ?? []).map((acc) =>
     acc.candidateId === candId && acc.role !== 'HR'
       ? { ...acc, role: 'EMPLOYEE' as const, employeeId: newEmpId }
-      : acc
+      : acc.candidateId === candId
+        ? { ...acc, employeeId: newEmpId }
+        : acc
   );
+
+  const existingTitles = state.positionTitles ?? [];
+  const nextTitles = existingTitles.some((t) => t.toLowerCase() === designation.toLowerCase())
+    ? existingTitles
+    : [...existingTitles, designation];
 
   const activity = createActivity(
     'EMPLOYEE',
@@ -1338,6 +1921,7 @@ export function createEmployeeDirect(
       ...state,
       employees: [...state.employees, newEmployee],
       accounts: updatedAccounts,
+      positionTitles: nextTitles,
       activities: [activity, ...state.activities],
     },
   };
@@ -1346,7 +1930,8 @@ export function createEmployeeDirect(
 /**
  * Enhanced HR Employee Editing:
  * Allows HR to change Designation, Joining Date, Annual Salary, Employment Status,
- * Department assignment (DEPT_ID), Phone, and Qualification.
+ * Department assignment (DEPT_ID), Hierarchy Level, Reporting Manager, Phone, and Qualification,
+ * and records a SalaryAdjustmentRecord in _salaryHistory whenever ANNUAL_SALARY changes.
  */
 export interface UpdateEmployeeInput {
   DESIGNATION: string;
@@ -1356,6 +1941,11 @@ export interface UpdateEmployeeInput {
   DEPT_ID?: number;
   PHONE?: string | null;
   QUALIFICATION?: string | null;
+  HIERARCHY_LEVEL?: HierarchyLevel;
+  MANAGER_EMPLOYEE_ID?: number | null;
+  AUTHORIZED_BY?: string;
+  AUTHORIZED_BY_USERNAME?: string;
+  SALARY_CHANGE_REASON?: string;
 }
 
 export function updateEmployee(
@@ -1400,13 +1990,70 @@ export function updateEmployee(
     deptOverride = deptIdNum;
   }
 
+  let nextLevel = existing._hierarchyLevel ?? 1;
+  if (input.HIERARCHY_LEVEL !== undefined) {
+    const lvl = Number(input.HIERARCHY_LEVEL) as HierarchyLevel;
+    if (lvl < 1 || lvl > 5 || !Number.isInteger(lvl)) {
+      return { ok: false, state, error: 'Hierarchy level must be between 1 and 5.' };
+    }
+    nextLevel = lvl;
+  }
+
+  let nextManagerId =
+    input.MANAGER_EMPLOYEE_ID !== undefined
+      ? input.MANAGER_EMPLOYEE_ID
+      : (existing._managerEmployeeId ?? null);
+  if (nextManagerId !== null && nextManagerId !== undefined) {
+    nextManagerId = Number(nextManagerId);
+    if (!state.employees.some((e) => e.EMPLOYEE_ID === nextManagerId)) {
+      return {
+        ok: false,
+        state,
+        error: `Reporting manager Employee #${nextManagerId} does not exist.`,
+      };
+    }
+    if (wouldCreateCircularReporting(state.employees, employeeId, nextManagerId)) {
+      return {
+        ok: false,
+        state,
+        error:
+          'Circular reporting relationship detected: An employee cannot report to themselves or to one of their own subordinates.',
+      };
+    }
+  }
+
+  const roundedSalary = Math.round(salary * 100) / 100;
+  const nextSalaryHistory = [...(existing._salaryHistory ?? [])];
+
+  if (roundedSalary !== existing.ANNUAL_SALARY) {
+    const pct = calculatePercentageIncrease(existing.ANNUAL_SALARY, roundedSalary);
+    nextSalaryHistory.push({
+      id: `sal-adj-${employeeId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      employeeId,
+      date: getTodayIsoDate(),
+      previousSalary: existing.ANNUAL_SALARY,
+      newSalary: roundedSalary,
+      percentageIncrease: pct,
+      authorizedBy: input.AUTHORIZED_BY || 'Karan Anil Saini',
+      authorizedByUsername: input.AUTHORIZED_BY_USERNAME || 'karan.saini',
+      reason:
+        input.SALARY_CHANGE_REASON?.trim() ||
+        (designation !== existing.DESIGNATION
+          ? `HR salary revision accompanying position update to ${designation}`
+          : 'HR direct compensation adjustment'),
+    });
+  }
+
   const updated: ErEmployee = {
     ...existing,
     DESIGNATION: designation,
     JOINING_DATE: joiningDate,
-    ANNUAL_SALARY: Math.round(salary * 100) / 100,
+    ANNUAL_SALARY: roundedSalary,
     EMPLOYMENT_STATUS: status,
     _deptIdOverride: deptOverride,
+    _hierarchyLevel: nextLevel,
+    _managerEmployeeId: nextManagerId,
+    _salaryHistory: nextSalaryHistory,
   };
 
   // Also update linked candidate's PHONE / QUALIFICATION if provided by HR
@@ -1432,6 +2079,11 @@ export function updateEmployee(
       ? state.departments.find((d) => d.DEPT_ID === deptOverride)?.DEPT_NAME
       : undefined;
 
+  const existingTitles = state.positionTitles ?? [];
+  const nextTitles = existingTitles.some((t) => t.toLowerCase() === designation.toLowerCase())
+    ? existingTitles
+    : [...existingTitles, designation];
+
   const activity = createActivity(
     'EMPLOYEE',
     `Employee #${employeeId} Updated by HR`,
@@ -1445,6 +2097,7 @@ export function updateEmployee(
       ...state,
       employees: state.employees.map((e) => (e.EMPLOYEE_ID === employeeId ? updated : e)),
       candidates: nextCandidates,
+      positionTitles: nextTitles,
       activities: [activity, ...state.activities],
     },
   };
@@ -1473,7 +2126,11 @@ export function deleteEmployee(
     message: `Employee #${employeeId} removed from local prototype state.`,
     state: {
       ...state,
-      employees: state.employees.filter((e) => e.EMPLOYEE_ID !== employeeId),
+      employees: state.employees
+        .filter((e) => e.EMPLOYEE_ID !== employeeId)
+        .map((e) =>
+          e._managerEmployeeId === employeeId ? { ...e, _managerEmployeeId: null } : e
+        ),
       activities: [activity, ...state.activities],
     },
   };
@@ -1694,13 +2351,14 @@ export function selectInterviewDetailsView(
 
 /**
  * Enriched Employees selector joining ER_EMPLOYEE -> ER_APPLICATION -> ER_CANDIDATE -> ER_JOB -> ER_DEPARTMENT
- * Respects HR department override (_deptIdOverride) when HR reassigns an employee's department.
+ * Respects HR department override (_deptIdOverride) and computes hierarchy & salary timeline fields.
  */
 export function selectEnrichedEmployees(state: RecruitmentDatabaseState): EnrichedEmployee[] {
   const appMap = new Map(state.applications.map((a) => [a.APPLICATION_ID, a]));
   const candMap = new Map(state.candidates.map((c) => [c.CANDIDATE_ID, c]));
   const jobMap = new Map(state.jobs.map((j) => [j.JOB_ID, j]));
   const deptMap = new Map(state.departments.map((d) => [d.DEPT_ID, d]));
+  const empMap = new Map(state.employees.map((e) => [e.EMPLOYEE_ID, e]));
 
   const rows: EnrichedEmployee[] = [];
   for (const emp of state.employees) {
@@ -1709,6 +2367,18 @@ export function selectEnrichedEmployees(state: RecruitmentDatabaseState): Enrich
     const job = app ? jobMap.get(app.JOB_ID) : undefined;
     const effectiveDeptId = emp._deptIdOverride ?? job?.DEPT_ID ?? 0;
     const dept = deptMap.get(effectiveDeptId);
+
+    const level: HierarchyLevel = emp._hierarchyLevel ?? 1;
+    const mgrId = emp._managerEmployeeId ?? null;
+    const mgrEmp = mgrId ? empMap.get(mgrId) : undefined;
+    const mgrCand = mgrEmp ? candMap.get(mgrEmp.CANDIDATE_ID) : undefined;
+    const mgrName = mgrEmp
+      ? `${mgrCand?.FULL_NAME ?? `Employee #${mgrEmp.EMPLOYEE_ID}`} (${mgrEmp.DESIGNATION})`
+      : null;
+
+    const directReportsCount = state.employees.filter(
+      (other) => other._managerEmployeeId === emp.EMPLOYEE_ID
+    ).length;
 
     rows.push({
       ...emp,
@@ -1722,6 +2392,13 @@ export function selectEnrichedEmployees(state: RecruitmentDatabaseState): Enrich
       JOB_TITLE: job?.JOB_TITLE ?? 'Unassigned',
       DEPT_ID: effectiveDeptId,
       DEPT_NAME: dept?.DEPT_NAME ?? 'Unassigned',
+      HIERARCHY_LEVEL: level,
+      HIERARCHY_LABEL: HIERARCHY_LEVEL_LABELS[level],
+      MANAGER_EMPLOYEE_ID: mgrId,
+      MANAGER_NAME: mgrName,
+      DIRECT_REPORTS_COUNT: directReportsCount,
+      PROMOTION_HISTORY: emp._promotionHistory ?? [],
+      SALARY_HISTORY: emp._salaryHistory ?? [],
     });
   }
 

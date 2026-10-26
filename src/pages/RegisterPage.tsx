@@ -97,14 +97,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     setResumeError(null);
     if (!file) return;
 
-    const validationErr = validatePdfResumeFile({
+    const validationRes = validatePdfResumeFile({
       name: file.name,
       size: file.size,
       type: file.type,
     });
-    if (validationErr) {
+    if (!validationRes.ok) {
       setResumeFile(null);
-      setResumeError(validationErr);
+      setResumeError(validationRes.error ?? 'Invalid PDF file.');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -183,7 +183,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
       EXPERIENCE_YEARS: Number(experienceYears),
       JOB_ID: Number(selectedJobId),
       REMARKS: remarks.trim() || 'Submitted via Candidate Registration Portal',
-      CUSTOM_USERNAME: customUsername.trim() || undefined,
+      customUsername: customUsername.trim() || undefined,
       resume: resumePayload,
     });
 
@@ -288,7 +288,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
               <div>
                 <div className="text-[var(--text-secondary)]">Current Application Status</div>
                 <div className="mt-1">
-                  <StatusIndicator status={submittedSummary.status} />
+                  <StatusIndicator status="APPLIED" />
                 </div>
               </div>
               <div>

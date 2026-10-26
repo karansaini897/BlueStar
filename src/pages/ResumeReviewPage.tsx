@@ -58,7 +58,9 @@ export const ResumeReviewPage: React.FC = () => {
   const resumeByCandidateOrApp = useMemo(() => {
     const map = new Map<number, (typeof db.resumes)[number]>();
     for (const r of db.resumes) {
-      map.set(r.APPLICATION_ID, r);
+      if (r.APPLICATION_ID !== undefined) {
+        map.set(r.APPLICATION_ID, r);
+      }
     }
     return map;
   }, [db.resumes]);

@@ -109,11 +109,17 @@ function generateAssistantReply(
   if (q.includes('how do i hire an eligible candidate') || q.includes('hire')) {
     return 'Open "Applications" (/applications) or "Resume Review" (/resume-review) and click "Hire" on an eligible application. Enter the employee Designation, Annual Salary, and Joining Date. This atomically updates the application status to HIRED and creates the linked ER_EMPLOYEE record.';
   }
+  if (q.includes('sql') || q.includes('console') || q.includes('query')) {
+    return 'HR users can open the "SQL Console" (/sql-console) from the HR sidebar to run simulated Oracle SQL*Plus commands (SELECT, DESC, SHOW TABLES, INSERT, UPDATE, DELETE, COMMIT, ROLLBACK, SAVEPOINT, and EXEC for the 6 supplied procedures) directly against the shared browser recruitment dataset.';
+  }
+  if (q.includes('promote') || q.includes('promotion') || q.includes('hierarchy') || q.includes('salary')) {
+    return 'In the Employee Directory (/employees), HR can promote employees, assign hierarchy levels (Level 1 to Level 5) and reporting managers, and inspect the Visual Timeline of Salary Adjustments showing each adjustment date, percentage increase, and authorizing HR user. Managers at Level 2+ can also promote eligible subordinates in their reporting chain.';
+  }
   if (q.includes('oracle') || q.includes('database') || q.includes('simulated')) {
     return 'This application is a frontend-only prototype modeled on the supplied Oracle SQL*Plus schema (ER_DEPARTMENT, ER_JOB, ER_CANDIDATE, ER_APPLICATION, ER_INTERVIEW, ER_EMPLOYEE, and ER_APPLICATION_AUDIT). All mutations occur in local browser state without a live Oracle server connection.';
   }
 
-  return 'I am the rule-based platform assistant for the Blue Star Employee Recruitment System prototype. I can help you navigate candidate registration, PDF resume uploads, application status tracking, HR resume review, employee directory management, and theme preferences. Select one of the suggested prompts above or ask about a specific workflow.';
+  return 'I am the rule-based platform assistant for the Blue Star Employee Recruitment System prototype. I can help you navigate candidate registration, PDF resume uploads, application status tracking, HR resume review, employee directory management, salary adjustment timelines, hierarchy promotions, and the HR SQL Console.';
 }
 
 export const ChatbotWidget: React.FC = () => {

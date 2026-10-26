@@ -11,6 +11,7 @@ import { BlueStarLogo } from './components/BlueStarLogo';
 import { ChatbotWidget } from './components/ChatbotWidget';
 import { ToastViewport } from './components/ui';
 import { RecruitmentProvider, useRecruitment } from './context/RecruitmentContext';
+import { AccountDirectoryPage } from './pages/AccountDirectoryPage';
 import { ApplicationsPage } from './pages/ApplicationsPage';
 import { CandidateWorkspacePage } from './pages/CandidateWorkspacePage';
 import { CandidatesPage } from './pages/CandidatesPage';
@@ -27,6 +28,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { ResumeReviewPage } from './pages/ResumeReviewPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { SqlConsolePage } from './pages/SqlConsolePage';
 
 const PROTECTED_ROUTES: Record<
   string,
@@ -69,15 +71,27 @@ const PROTECTED_ROUTES: Record<
     allowedRoles: ['HR'],
   },
   '/employees': {
-    title: 'Employee Directory (ER_EMPLOYEE)',
+    title: 'Employee Directory, Hierarchy & Promotions (ER_EMPLOYEE)',
     subtitle:
-      'View employee profiles and manage salary, department assignment, designation, joining date, and employment status.',
+      'View employee profiles, visual salary adjustment timelines, reporting hierarchy, and manage promotions and designations.',
     allowedRoles: ['HR'],
   },
   '/departments': {
     title: 'Department Directory (ER_DEPARTMENT)',
     subtitle:
       'Manage corporate departments and monitor department-wise open jobs and vacancy totals.',
+    allowedRoles: ['HR'],
+  },
+  '/sql-console': {
+    title: 'SQL*Plus Simulation Console',
+    subtitle:
+      'Execute Oracle SQL*Plus queries, views, DML statements, and stored procedures directly against shared browser recruitment state.',
+    allowedRoles: ['HR'],
+  },
+  '/accounts': {
+    title: 'HR Account Directory',
+    subtitle:
+      'Inspect provisioned prototype accounts, role assignments, linked candidate/employee records, and hierarchy levels.',
     allowedRoles: ['HR'],
   },
   '/reports': {
@@ -89,7 +103,7 @@ const PROTECTED_ROUTES: Record<
   '/employee-workspace': {
     title: 'Employee Self-Service Workspace',
     subtitle:
-      'View your personal employment record, department assignment, compensation details, and update your contact profile.',
+      'View your personal employment record, salary adjustment timeline, promotion history, and update your contact profile.',
     allowedRoles: ['EMPLOYEE', 'HR'],
   },
   '/candidate-workspace': {
@@ -253,6 +267,8 @@ const RouterView: React.FC = () => {
           {currentPath === '/interviews' && <InterviewsPage />}
           {currentPath === '/employees' && <EmployeesPage />}
           {currentPath === '/departments' && <DepartmentsPage />}
+          {currentPath === '/sql-console' && <SqlConsolePage />}
+          {currentPath === '/accounts' && <AccountDirectoryPage />}
           {currentPath === '/reports' && <ReportsPage />}
           {currentPath === '/employee-workspace' && (
             <EmployeeWorkspacePage onNavigate={navigate} />

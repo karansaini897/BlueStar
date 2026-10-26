@@ -8,11 +8,14 @@ import {
   HireCandidateInput,
   JobInput,
   OperationResult,
+  PromoteEmployeeInput,
   RegisterCandidateInput,
   ScheduleInterviewInput,
+  UpdateEmployeeHierarchyInput,
   UpdateEmployeeInput,
   UpdateInterviewFeedbackInput,
   addCandidate as opAddCandidate,
+  addPositionTitle as opAddPositionTitle,
   applyForJob as opApplyForJob,
   buildPrototypeUsername,
   calculateDashboardMetrics,
@@ -23,6 +26,7 @@ import {
   deleteEmployee as opDeleteEmployee,
   deleteJob as opDeleteJob,
   hireCandidate as opHireCandidate,
+  promoteEmployee as opPromoteEmployee,
   registerCandidateWorkflow as opRegisterCandidateWorkflow,
   saveCandidateResume as opSaveCandidateResume,
   scheduleInterview as opScheduleInterview,
@@ -34,6 +38,7 @@ import {
   updateCandidate as opUpdateCandidate,
   updateDepartment as opUpdateDepartment,
   updateEmployee as opUpdateEmployee,
+  updateEmployeeHierarchy as opUpdateEmployeeHierarchy,
   updateInterviewFeedback as opUpdateInterviewFeedback,
   updateJob as opUpdateJob,
 } from '../model/operations';
@@ -108,6 +113,12 @@ interface RecruitmentContextValue {
   createEmployeeDirect: (input: CreateEmployeeInput) => OperationResult;
   updateEmployee: (employeeId: number, input: UpdateEmployeeInput) => OperationResult;
   deleteEmployee: (employeeId: number) => OperationResult;
+  promoteEmployee: (input: Omit<PromoteEmployeeInput, 'actorUsername'> & { actorUsername?: string }) => OperationResult;
+  updateEmployeeHierarchy: (
+    input: Omit<UpdateEmployeeHierarchyInput, 'actorUsername'> & { actorUsername?: string }
+  ) => OperationResult;
+  addPositionTitle: (title: string) => OperationResult;
+  replaceDatabaseState: (nextState: RecruitmentDatabaseState, summaryMessage?: string) => void;
   createDepartment: (deptName: string) => OperationResult;
   updateDepartment: (deptId: number, deptName: string) => OperationResult;
   deleteDepartment: (deptId: number) => OperationResult;
@@ -135,13 +146,48 @@ function loadStoredDatabase(): RecruitmentDatabaseState {
     ) {
       return initial;
     }
+    const seedEmpMap = new Map(initial.employees.map((e) => [e.EMPLOYEE_ID, e]));
     return {
       ...parsed,
+      employees: parsed.employees.map((emp) => {
+        const seedEmp = seedEmpMap.get(emp.EMPLOYEE_ID);
+        return {
+          ...emp,
+          _hierarchyLevel: emp._hierarchyLevel ?? seedEmp?._hierarchyLevel ?? 1,
+          _managerEmployeeId:
+            emp._managerEmployeeId !== undefined
+              ? emp._managerEmployeeId
+              : (seedEmp?._managerEmployeeId ?? null),
+          _promotionHistory: Array.isArray(emp._promotionHistory)
+            ? emp._promotionHistory
+            : (seedEmp?._promotionHistory ?? []),
+          _salaryHistory:
+            Array.isArray(emp._salaryHistory) && emp._salaryHistory.length > 0
+              ? emp._salaryHistory
+              : (seedEmp?._salaryHistory ?? [
+                  {
+                    id: `sal-mig-${emp.EMPLOYEE_ID}`,
+                    employeeId: emp.EMPLOYEE_ID,
+                    date: emp.JOINING_DATE,
+                    previousSalary: emp.ANNUAL_SALARY,
+                    newSalary: emp.ANNUAL_SALARY,
+                    percentageIncrease: 0,
+                    authorizedBy: 'Karan Anil Saini',
+                    authorizedByUsername: 'karan.saini',
+                    reason: 'Initial compensation baseline.',
+                  },
+                ]),
+        };
+      }),
       resumes: Array.isArray(parsed.resumes) ? parsed.resumes : initial.resumes,
       accounts:
         Array.isArray(parsed.accounts) && parsed.accounts.length > 0
           ? parsed.accounts
           : initial.accounts,
+      positionTitles:
+        Array.isArray(parsed.positionTitles) && parsed.positionTitles.length > 0
+          ? parsed.positionTitles
+          : initial.positionTitles,
     };
   } catch {
     return initial;
@@ -503,26 +549,88 @@ export const RecruitmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       runOperation((s) =>
         opHireCandidate(s, {
           ...input,
-          CHANGED_BY: (currentUser?.username ?? 'HR_ADMIN').toUpperCase(),
+          CHANGED_BY: currentUser?.username ?? 'karan.saini',
+          AUTHORIZED_BY_NAME: currentUser?.fullName ?? 'Karan Anil Saini',
         })
       ),
     [runOperation, currentUser]
   );
 
   const createEmployeeDirect = useCallback(
-    (input: CreateEmployeeInput) => runOperation((s) => opCreateEmployeeDirect(s, input)),
-    [runOperation]
+    (input: CreateEmployeeInput) =>
+      runOperation((s) =>
+        opCreateEmployeeDirect(s, {
+          ...input,
+          AUTHORIZED_BY: input.AUTHORIZED_BY ?? currentUser?.fullName ?? 'Karan Anil Saini',
+          AUTHORIZED_BY_USERNAME:
+            input.AUTHORIZED_BY_USERNAME ?? currentUser?.username ?? 'karan.saini',
+        })
+      ),
+    [runOperation, currentUser]
   );
 
   const updateEmployee = useCallback(
     (employeeId: number, input: UpdateEmployeeInput) =>
-      runOperation((s) => opUpdateEmployee(s, employeeId, input)),
-    [runOperation]
+      runOperation((s) =>
+        opUpdateEmployee(s, employeeId, {
+          ...input,
+          AUTHORIZED_BY: input.AUTHORIZED_BY ?? currentUser?.fullName ?? 'Karan Anil Saini',
+          AUTHORIZED_BY_USERNAME:
+            input.AUTHORIZED_BY_USERNAME ?? currentUser?.username ?? 'karan.saini',
+        })
+      ),
+    [runOperation, currentUser]
   );
 
   const deleteEmployee = useCallback(
     (employeeId: number) => runOperation((s) => opDeleteEmployee(s, employeeId)),
     [runOperation]
+  );
+
+  const promoteEmployee = useCallback(
+    (input: Omit<PromoteEmployeeInput, 'actorUsername'> & { actorUsername?: string }) =>
+      runOperation((s) =>
+        opPromoteEmployee(s, {
+          ...input,
+          actorUsername: input.actorUsername ?? currentUser?.username ?? '',
+        })
+      ),
+    [runOperation, currentUser]
+  );
+
+  const updateEmployeeHierarchy = useCallback(
+    (
+      input: Omit<UpdateEmployeeHierarchyInput, 'actorUsername'> & { actorUsername?: string }
+    ) =>
+      runOperation((s) =>
+        opUpdateEmployeeHierarchy(s, {
+          ...input,
+          actorUsername: input.actorUsername ?? currentUser?.username ?? '',
+        })
+      ),
+    [runOperation, currentUser]
+  );
+
+  const addPositionTitle = useCallback(
+    (title: string) => runOperation((s) => opAddPositionTitle(s, title)),
+    [runOperation]
+  );
+
+  const replaceDatabaseState = useCallback(
+    (nextState: RecruitmentDatabaseState, summaryMessage?: string) => {
+      setDb(nextState);
+      setLastRefreshedAt(
+        new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })
+      );
+      if (summaryMessage) {
+        notify('success', 'SQL Changes Synchronised', summaryMessage);
+      }
+    },
+    [notify]
   );
 
   const createDepartment = useCallback(
@@ -627,6 +735,10 @@ export const RecruitmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     createEmployeeDirect,
     updateEmployee,
     deleteEmployee,
+    promoteEmployee,
+    updateEmployeeHierarchy,
+    addPositionTitle,
+    replaceDatabaseState,
     createDepartment,
     updateDepartment,
     deleteDepartment,
