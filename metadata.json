@@ -1,0 +1,6 @@
+{
+  "name": "Blue Star's - Employee Recruitment System",
+  "description": "A unified enterprise recruitment workspace for managing candidates, job vacancies, applications, interviews, and employee onboarding, modeled on the Blue Star Oracle SQL*Plus recruitment architecture.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

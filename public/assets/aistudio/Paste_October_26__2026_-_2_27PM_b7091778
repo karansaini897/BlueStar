@@ -1,0 +1,2841 @@
+# BLUE STAR'S - EMPLOYEE RECRUITMENT SYSTEM
+## Definitive Frontend Engineering, Product Design, Interaction, and Quality Assurance Specification
+
+### PROJECT CLASSIFICATION
+
+Build a complete, professional, interactive, responsive, frontend-only Employee Recruitment System for Blue Star.
+
+This project combines four equally important objectives:
+
+1. An exceptional, visually distinctive landing page inspired by the MotionSites facet-glass hero design.
+2. A complete recruitment-management application with functional workflows.
+3. A reliable frontend architecture that accurately models the supplied Oracle SQL*Plus project.
+4. A polished, tested, production-buildable application that can subsequently be connected to a backend without requiring the entire frontend to be rewritten.
+
+This is not a request to generate a mockup, a static dashboard, a collection of screenshots, or a simple marketing website.
+
+Build the actual frontend application, including its screens, interactions, local data operations, navigation, validation, persistence, responsive behaviour, and visual design system.
+
+The design must feel intentionally crafted, the interactions must work, and the implementation must remain maintainable.
+
+---
+
+# PART I. SOURCE OF TRUTH AND NON-NEGOTIABLE REQUIREMENTS
+
+## 1.1 Inspect the supplied materials before implementation
+
+I have supplied a PDF named `MiniProject Code.pdf` containing my Oracle SQL*Plus Employee Recruitment System project.
+
+This document is the primary reference for the database structure and the recruitment operations represented by the frontend.
+
+Before creating the frontend data models, inspect the entire available SQL document.
+
+Identify the actual definitions of:
+
+- Tables.
+- Columns and data types.
+- Primary keys.
+- Foreign keys.
+- Unique constraints.
+- Check constraints.
+- Sequences.
+- Stored procedures.
+- Views.
+- Triggers.
+- Application status values.
+- Interview status values.
+- Employment status values.
+- Initial departments.
+- Initial jobs.
+- Initial candidates.
+- Initial applications.
+- Existing employee and interview records, if present.
+
+Understand how the entities relate to one another.
+
+Do not rely on a few extracted snippets when the complete document is available.
+
+Do not invent columns, relationships, status values, or database operations that contradict the SQL file.
+
+If an entity is not defined in the supplied schema, do not silently add it to the claimed database schema.
+
+If an interface requires an additional frontend-only field, identify it explicitly as presentation metadata rather than pretending it exists in Oracle.
+
+If the SQL document contains inconsistencies, preserve the actual declared table definitions and constraints as the source of truth. Record any unresolved discrepancies in the final implementation report instead of silently changing them.
+
+The frontend must be compatible with the database model represented in the PDF, not with an invented replacement model.
+
+## 1.2 Existing codebase preservation
+
+First determine whether an existing frontend codebase has been supplied.
+
+### If an existing project is supplied
+
+Treat the supplied codebase as the source of truth for its framework, routing, dependencies, components, and existing functionality.
+
+Inspect the project before changing it.
+
+Preserve working features and existing architecture wherever practical.
+
+Do not replace the entire application merely because creating a new one would be easier.
+
+Do not discard existing pages, routes, configuration, or functionality to accommodate the new visual design.
+
+Make targeted changes and verify their impact.
+
+### If no frontend codebase is supplied
+
+Create a complete application using a suitable modern frontend stack.
+
+Prefer React, TypeScript, and Vite if the environment supports them and no existing framework needs to be preserved.
+
+Use reusable components, modular styles, a consistent data model, and a clear separation between presentation and application logic.
+
+In either case, deliver a working application rather than a design proposal.
+
+## 1.3 Absolute backend restriction
+
+**THIS PROJECT MUST REMAIN FRONTEND-ONLY.**
+
+Do not implement a backend.
+
+Do not connect to Oracle SQL*Plus.
+
+Do not configure database drivers.
+
+Do not create a server.
+
+Do not introduce Supabase, Firebase, or another backend platform.
+
+Do not create API endpoints.
+
+Do not create database migrations.
+
+Do not configure real authentication services.
+
+Do not add server-side credentials.
+
+Do not pretend that data has been written to the actual Oracle database.
+
+All application functionality must operate locally in the browser.
+
+Use a consistent frontend data layer with in-memory state and local storage where appropriate.
+
+The user must be able to demonstrate the application without running a database server.
+
+Every local operation must produce an actual state change, not merely an animation or success notification.
+
+## 1.4 The three layers of truth
+
+Keep these three concepts distinct throughout the application:
+
+**Layer A: Supplied database model**
+
+The actual tables, columns, constraints, and operations documented in `MiniProject Code.pdf`.
+
+**Layer B: Frontend demonstration state**
+
+The records and operations currently held in browser memory or local storage.
+
+**Layer C: Future backend integration**
+
+A possible later implementation that connects the frontend to a database-backed service.
+
+The current project implements Layers A and B as a documented schema and a functional local simulation.
+
+It does not implement Layer C.
+
+Never describe Layer B as if it were a live connection to Layer A.
+
+---
+
+# PART II. BRAND IDENTITY
+
+## 2. BRAND: BLUE STAR
+
+The organisation is named:
+
+**Blue Star**
+
+The application name is:
+
+**Blue Star's - Employee Recruitment System**
+
+Use the official Blue Star corporate website for branding references:
+
+https://www.bluestarindia.com/
+
+Use the official site to identify authentic branding assets and understand the company's visual identity.
+
+The recruitment application should feel appropriate for a professional enterprise environment.
+
+Do not make the application resemble a consumer shopping website simply because the company also operates in the HVAC and refrigeration industry.
+
+The product is an employee recruitment system. Its interface must communicate organisation, people, operational clarity, trust, and professionalism.
+
+## 2.1 Official logo
+
+Use the authentic Blue Star corporate logo.
+
+Preferred source:
+
+https://www.bluestarindia.com/
+
+Requirements:
+
+- Locate the official logo asset when possible.
+- Preserve its proportions.
+- Preserve its recognisable design.
+- Do not redraw it using AI-generated text.
+- Do not substitute a generic star icon and call it the official logo.
+- Do not stretch or distort the logo.
+- Maintain adequate contrast against the background.
+- Use a suitable version on light and dark surfaces.
+- Keep the asset local to the project where practical.
+- If the official asset cannot be retrieved, create a clearly replaceable placeholder and document the limitation.
+
+Use the logo in appropriate locations:
+
+- Landing-page navigation.
+- Application navigation.
+- Login screen.
+- Browser favicon, if a suitable asset is available.
+- Other appropriate brand-identification areas.
+
+Do not clutter every screen with oversized branding.
+
+## 2.2 Browser title
+
+Set the HTML document title to exactly:
+
+`Blue Star's - Employee Recruitment System`
+
+Use the correct spelling of "Recruitment".
+
+The title must work after direct navigation to nested routes, page refreshes, and deployment.
+
+Do not leave default titles such as:
+
+- React App.
+- Vite App.
+- Google AI Studio.
+- Untitled.
+- Employee Dashboard.
+
+## 2.3 Favicon
+
+Configure the favicon using the official Blue Star logo or a suitable favicon asset derived from it.
+
+Ensure the favicon path is valid in the production build.
+
+Do not assume that displaying the logo inside the React application automatically changes the browser favicon.
+
+Verify the HTML document metadata separately.
+
+## 2.4 Brand voice
+
+Use concise, professional, natural language.
+
+Avoid exaggerated claims such as:
+
+- "Revolutionising the future of recruitment."
+- "The world's most intelligent HR platform."
+- "The ultimate next-generation hiring revolution."
+
+Do not invent claims about the company's recruitment operations.
+
+The application should communicate confidence through its quality rather than through excessive marketing language.
+
+---
+
+# PART III. THE DESIGN VISION
+
+## 3. THE CREATIVE DIRECTION
+
+Primary reference:
+
+https://motionsites.ai/?prompt=facet-glass-hero
+
+Study the reference's visual direction before implementing the landing page.
+
+Use it as inspiration for:
+
+- Faceted glass compositions.
+- Layered surfaces.
+- Dimensional geometry.
+- Refined transparency.
+- Architectural visual depth.
+- Elegant composition.
+- Sophisticated motion.
+- Premium interactive surfaces.
+
+Create an original design adapted to the Blue Star Employee Recruitment System.
+
+Do not simply copy a generic liquid-glass template and replace its heading.
+
+Do not reproduce proprietary source code from MotionSites.
+
+Do not make the application dependent on MotionSites.
+
+The visual result should communicate a premium enterprise product, with the hero providing the expressive visual identity and the dashboard providing clarity and operational efficiency.
+
+## 3.1 Overall aesthetic
+
+The defining visual combination is:
+
+**Warm architectural beige + Blue Star corporate blue + faceted glass + fine tactile texture + restrained dimensional borders + carefully paced motion.**
+
+The interface should feel like a thoughtfully designed enterprise product with an editorial visual identity.
+
+Aim for:
+
+- Sophisticated.
+- Composed.
+- Tactile.
+- Architectural.
+- Professional.
+- Modern.
+- Precise.
+- Readable.
+- Cohesive.
+
+Avoid:
+
+- Generic AI-dashboard aesthetics.
+- Excessive gradients.
+- Neon glows.
+- Unnecessary decorative circles.
+- Random floating cards.
+- Excessive glass blur.
+- Uniformly white screens.
+- Overly rounded controls everywhere.
+- Unnecessary animation.
+- Huge empty areas.
+- Excessive shadows.
+- Inconsistent spacing.
+- Decorative elements without a clear purpose.
+
+The design must have a clear visual hierarchy.
+
+---
+
+# PART IV. COLOUR SYSTEM AND MATERIALS
+
+## 4. LIGHT MODE
+
+The default theme should be a warm, textured light interface.
+
+Use this palette as an initial design specification:
+
+| Design token | Initial value | Purpose |
+|---|---|---|
+| `--page-bg` | `#F3F0E8` | Main warm-beige background |
+| `--surface-primary` | `#FAF8F2` | Primary content surfaces |
+| `--surface-secondary` | `#EAE5DA` | Secondary surfaces |
+| `--surface-muted` | `#E2DDD2` | Subtle inset surfaces |
+| `--brand-primary` | `#0757A6` | Primary brand-blue accent |
+| `--brand-hover` | `#064780` | Hover and active emphasis |
+| `--text-primary` | `#20272F` | Main text |
+| `--text-secondary` | `#68717B` | Secondary text |
+| `--border-subtle` | `#D5D0C5` | Standard borders |
+| `--border-emphasis` | `#B8C8D7` | Emphasised blue-tinted borders |
+| `--success` | `#2F7655` | Success indicators |
+| `--warning` | `#9B691E` | Warning indicators |
+| `--danger` | `#B44842` | Error indicators |
+
+These are starting values for the design system, not official Blue Star brand specifications.
+
+Refine them to achieve a coherent visual identity and accessible contrast.
+
+The official logo and official brand assets take precedence when selecting the final brand-blue shade.
+
+## 4.1 Dark mode
+
+Create a complete dark theme using:
+
+| Design token | Suggested direction |
+|---|---|
+| `--page-bg` | Deep charcoal with a blue undertone |
+| `--surface-primary` | Dark charcoal |
+| `--surface-secondary` | Slightly lighter charcoal |
+| `--surface-muted` | Muted blue-charcoal |
+| `--brand-primary` | Accessible medium blue |
+| `--text-primary` | Soft off-white |
+| `--text-secondary` | Muted cool grey |
+| `--border-subtle` | Low-contrast charcoal-blue |
+| `--border-emphasis` | Restrained steel blue |
+
+Do not turn the entire application pitch-black.
+
+Do not use bright blue text for every heading.
+
+Preserve the warm and sophisticated character of the product while adapting the surfaces to dark mode.
+
+## 4.2 No gradient-heavy design
+
+Gradients may be used sparingly to suggest subtle depth on individual surfaces.
+
+They must not dominate the interface.
+
+Do not use:
+
+- Large purple-to-blue gradients.
+- Neon rainbow gradients.
+- Bright multicolour mesh backgrounds.
+- Full-screen gradient fills.
+- Excessive gradient text.
+- Strong gradients behind data tables.
+
+The primary background must remain a warm beige texture in light mode.
+
+The primary dark background must remain a sophisticated charcoal surface in dark mode.
+
+## 4.3 Surface hierarchy
+
+Establish a clear hierarchy between:
+
+1. The page background.
+2. Main application surfaces.
+3. Cards.
+4. Elevated panels.
+5. Dialogs.
+6. Dropdowns and tooltips.
+7. Interactive controls.
+
+Use small variations in surface colour, subtle borders, and restrained shadows to distinguish these layers.
+
+Do not rely exclusively on transparency to distinguish components.
+
+The interface must remain readable even if backdrop blur is unavailable.
+
+---
+
+# PART V. BACKGROUND TEXTURE AND GEOMETRIC LANGUAGE
+
+## 5. TEXTURED BACKGROUND
+
+Create a subtle background that feels tactile and architectural rather than flat.
+
+Use a restrained combination of:
+
+- Fine paper grain.
+- Very low-opacity geometric facets.
+- Fine angular linework.
+- Subtle grid or drafting marks.
+- Carefully controlled tonal variation.
+- Softly layered translucent shapes.
+- Restrained architectural patterns.
+
+The texture should be visible enough to distinguish the interface from a plain white template, but never so visible that it competes with the content.
+
+### Implementation rules
+
+Prefer lightweight CSS-generated textures, local SVG assets, or carefully optimised images.
+
+Do not require a large external background image to load before the interface becomes usable.
+
+Avoid large textures that create excessive GPU or rendering costs.
+
+Ensure that the texture:
+
+- Sits behind interface content.
+- Never intercepts pointer events.
+- Never obscures text.
+- Never reduces contrast.
+- Never creates unintended horizontal scrolling.
+- Never changes layout dimensions.
+- Never interferes with forms or dialogs.
+
+Use separate decorative layers where necessary.
+
+Apply `pointer-events: none` to non-interactive decorative elements.
+
+Ensure decorative elements have appropriate stacking contexts.
+
+### Texture placement
+
+Use more expressive textures on:
+
+- The landing-page hero.
+- The introductory sections.
+- The login background.
+- Selected empty states.
+- Large dashboard background areas.
+
+Use more restrained textures inside:
+
+- Data tables.
+- Forms.
+- Reports.
+- Dense management screens.
+- Dialogs.
+
+Do not put an animated pattern behind every text field.
+
+---
+
+# PART VI. THE MOTIONSITES-INSPIRED LANDING PAGE
+
+## 6. PRIMARY REFERENCE
+
+https://motionsites.ai/?prompt=facet-glass-hero
+
+The landing page must be the strongest visual element of the project.
+
+It should be immediately recognisable as a carefully designed corporate recruitment product.
+
+Do not make it look like a generic admin dashboard placed on a background.
+
+Create a complete visual composition with clear foreground, middle ground, and background layers.
+
+## 6.1 Landing-page navigation
+
+Create a refined top navigation bar containing:
+
+- Official Blue Star logo.
+- Product name or concise brand identifier.
+- A small number of relevant navigation links.
+- Theme toggle.
+- Primary action leading to the application.
+
+Suggested navigation:
+
+- Overview.
+- Features.
+- Workflow.
+- Platform.
+
+Primary action:
+
+"Open Workspace"
+
+Navigation links must scroll to valid sections or navigate to valid routes.
+
+Do not create links that lead nowhere.
+
+On mobile, collapse the navigation into an accessible menu.
+
+The header may use a restrained glass surface, but it should remain legible against the background.
+
+## 6.2 Hero layout
+
+Use a spacious two-column composition on desktop.
+
+The left side presents the message and primary actions.
+
+The right side presents a distinctive faceted-glass visual composition with a realistic preview of the recruitment interface.
+
+On mobile, stack the content in a sensible order.
+
+Avoid excessively large headings that consume the entire first screen.
+
+### Hero eyebrow
+
+Use a small, refined label:
+
+`EMPLOYEE RECRUITMENT SYSTEM`
+
+It should resemble a professional product identifier, not a promotional badge.
+
+### Main headline
+
+Use:
+
+"Building Teams. Shaping Tomorrow."
+
+This is the suggested hero headline.
+
+Maintain its meaning and professional tone.
+
+Use carefully controlled line breaks and typography.
+
+The heading should be visually distinctive without being excessively large.
+
+### Supporting text
+
+Use:
+
+"A unified recruitment workspace for managing candidates, applications, interviews and employee records with greater clarity and control."
+
+Keep the paragraph comfortably readable.
+
+Avoid long, generic marketing copy.
+
+### Primary CTA
+
+"Explore the Platform"
+
+This button should navigate to the application login or workspace entry point.
+
+### Secondary CTA
+
+"View Recruitment Workflow"
+
+This button should scroll to the workflow section.
+
+Both buttons must perform real actions.
+
+## 6.3 Facet-glass visual composition
+
+Create an original composition inspired by the reference.
+
+The composition should include several carefully layered elements:
+
+### Layer A: Background geometry
+
+Use a small number of oversized angular or faceted forms.
+
+Their purpose is to create dimensional depth.
+
+Use restrained blue-grey and beige tones.
+
+Do not fill the entire hero with floating geometric shapes.
+
+### Layer B: Glass surfaces
+
+Create translucent, faceted surfaces with:
+
+- Subtle highlights.
+- Fine borders.
+- Restrained blur.
+- Dimensional shadows.
+- Slight differences in opacity.
+- Carefully controlled reflections.
+
+The surfaces should feel layered rather than flat.
+
+### Layer C: Recruitment interface preview
+
+Integrate a realistic miniature recruitment dashboard into the composition.
+
+It may contain:
+
+- A small recruitment summary.
+- A few application status indicators.
+- A compact interview schedule.
+- A miniature candidate list.
+
+These elements must be derived from the actual frontend data model.
+
+If the preview contains sample values, those values must be clearly understood as local demonstration data.
+
+Do not use fictional customer logos, endorsements, or corporate achievements.
+
+### Layer D: Small informational accents
+
+Use a restrained number of small interface accents.
+
+Examples include:
+
+- A status badge.
+- A small application count.
+- A thin progress indicator.
+- A compact date label.
+
+These must reinforce the recruitment theme.
+
+Avoid random decorative labels that have no relationship to the product.
+
+## 6.4 Hero visual quality
+
+The composition should have a clear focal point.
+
+The headline must remain the primary communication element.
+
+The glass composition should support the message rather than overwhelm it.
+
+The official logo must remain undistorted.
+
+Ensure the hero still looks coherent if animations are disabled.
+
+Do not rely on a remote video that might fail to load.
+
+A locally rendered geometric composition is preferable to a large external video if it achieves the desired result more reliably.
+
+---
+
+# PART VII. ANIMATION SYSTEM
+
+## 7. ANIMATION PHILOSOPHY
+
+Motion should communicate depth, hierarchy, and feedback.
+
+It must never compromise usability.
+
+Use three animation categories:
+
+1. Entrance animations.
+2. Interactive feedback.
+3. Decorative background motion.
+
+Give each category its own timing rules.
+
+## 7.1 Entrance animations
+
+Use a carefully staged sequence on initial page load.
+
+Suggested order:
+
+1. Background texture is immediately available.
+2. Navigation appears with a subtle fade.
+3. Hero eyebrow fades into view.
+4. Headline enters with a gentle upward movement.
+5. Supporting paragraph appears.
+6. Primary and secondary buttons appear with a restrained stagger.
+7. Glass composition settles into place.
+8. Decorative background geometry begins its slow motion.
+
+Keep the animation sequence brief enough that users can access the interface promptly.
+
+Use opacity and small transforms rather than large movements.
+
+Avoid extreme blur transitions on text.
+
+Text must become readable quickly.
+
+Do not make the entire application wait for decorative animations to finish.
+
+## 7.2 Suggested timing
+
+Use the following as initial design guidance:
+
+| Animation | Suggested duration |
+|---|---:|
+| Small button feedback | 140-220 ms |
+| Hover surface transition | 180-260 ms |
+| Modal entrance | 220-320 ms |
+| Card entrance | 300-500 ms |
+| Hero text entrance | 450-750 ms |
+| Background geometric movement | 20-45 seconds per cycle |
+
+These values are starting points.
+
+Refine them to achieve a composed and responsive experience.
+
+The background movement should be significantly slower than interaction feedback.
+
+## 7.3 Easing
+
+Use smooth, restrained easing.
+
+Avoid bouncy, elastic, exaggerated, or cartoon-like movement.
+
+Use small translate distances.
+
+Avoid unnecessary scaling that makes controls feel unstable.
+
+## 7.4 Reduced motion
+
+Respect `prefers-reduced-motion`.
+
+When reduced motion is requested:
+
+- Disable continuous decorative rotation.
+- Reduce entrance movements.
+- Remove unnecessary parallax.
+- Avoid large transforms.
+- Preserve all functionality.
+- Keep interaction feedback clear.
+
+The interface must remain fully usable without animation.
+
+---
+
+# PART VIII. BUTTONS AND IOS-INSPIRED GLASSMORPHISM
+
+## 8. BUTTON DESIGN
+
+Buttons are a central part of the requested visual identity.
+
+Create a consistent button system inspired by faceted glass and the refined translucent material effects associated with iOS 26.
+
+This is a visual reference, not a request to reproduce Apple's operating system interface.
+
+The design must be adapted for a professional enterprise web application.
+
+## 8.1 Button hierarchy
+
+Implement these button types:
+
+### Primary button
+
+Used for important actions.
+
+Examples:
+
+- Open Workspace.
+- Add Candidate.
+- Create Employee.
+- Create Job.
+- Schedule Interview.
+- Save Changes.
+- Confirm Hiring.
+
+Appearance:
+
+- Strong Blue Star brand accent.
+- Clear text contrast.
+- Refined dimensional border.
+- Restrained highlight.
+- Subtle elevation.
+
+### Secondary button
+
+Used for supporting actions.
+
+Examples:
+
+- Cancel.
+- View Details.
+- Export CSV.
+- View Workflow.
+
+Appearance:
+
+- Translucent or lightly tinted surface.
+- Fine border.
+- Clear label.
+- Subtle hover feedback.
+
+### Tertiary button
+
+Used for low-emphasis actions.
+
+Examples:
+
+- Clear Filters.
+- View More.
+- Back.
+
+Appearance:
+
+- Minimal surface.
+- Clear text.
+- Visible hover and focus states.
+
+### Destructive button
+
+Used for operations such as deleting a local record.
+
+Appearance:
+
+- Restrained error colour.
+- Clear destructive label.
+- Confirmation for consequential operations.
+
+Do not make every button equally prominent.
+
+## 8.2 Faceted border treatment
+
+Use a refined border system consisting of:
+
+- A thin outer border.
+- A subtle inner highlight.
+- Slightly varied border opacity.
+- Restrained shadow.
+- A small surface-tone variation.
+
+The border should appear dimensional without looking thick or neon.
+
+Do not use a bright glowing outline on every button.
+
+## 8.3 Interaction states
+
+Implement the following states consistently:
+
+**Default**
+
+The button is visually clear and immediately identifiable.
+
+**Hover**
+
+The surface and border become slightly more defined.
+
+A small elevation change is acceptable.
+
+**Pressed**
+
+Use a subtle compression effect.
+
+**Focused**
+
+Provide a visible keyboard focus indicator.
+
+**Disabled**
+
+Reduce emphasis and prevent activation.
+
+**Loading**
+
+Display an appropriate loading indicator.
+
+Prevent duplicate submissions while the operation is in progress.
+
+**Success**
+
+Where appropriate, display a restrained confirmation state or notification.
+
+Do not leave a button permanently in a loading state.
+
+## 8.4 Performance
+
+Use CSS transitions wherever practical.
+
+Avoid unnecessary dependencies.
+
+Use `backdrop-filter` selectively.
+
+Provide a readable fallback when blur is unavailable.
+
+Do not continuously animate expensive blur effects.
+
+Use transforms and opacity for most motion.
+
+Keep the interface responsive on ordinary laptops and mobile devices.
+
+---
+
+# PART IX. APPLICATION STRUCTURE AND NAVIGATION
+
+## 9. APPLICATION ARCHITECTURE
+
+Create two clearly separated experiences:
+
+1. Public landing page.
+2. Recruitment application.
+
+Suggested route structure:
+
+- `/` : Public landing page.
+- `/login` : Local demonstration login.
+- `/dashboard` : Recruitment dashboard.
+- `/candidates` : Candidate directory.
+- `/applications` : Application management.
+- `/jobs` : Job and vacancy management.
+- `/interviews` : Interview management.
+- `/employees` : Employee management.
+- `/departments` : Department management.
+- `/reports` : Reports and analytics.
+- `/settings` : Application settings.
+
+If an existing project already has a routing structure, adapt this route map to it rather than breaking existing routes.
+
+Every route must work when accessed directly.
+
+Refreshes on nested routes must not produce avoidable failures.
+
+If a route is unknown, display a designed not-found page with a working way back to the application.
+
+## 9.1 Navigation shell
+
+On desktop, use a clean, collapsible sidebar.
+
+Include:
+
+- Blue Star branding.
+- Navigation labels.
+- Appropriate icons.
+- Current-page highlighting.
+- Optional compact mode.
+- Theme toggle in a consistent location.
+- A demonstration-account indicator.
+
+Use a restrained top bar containing:
+
+- Page title.
+- Breadcrumbs where appropriate.
+- Search or contextual actions.
+- Notifications where relevant.
+- User menu.
+
+Avoid excessive top-level controls.
+
+## 9.2 Mobile navigation
+
+On mobile, use a collapsible navigation drawer or another accessible compact pattern.
+
+Ensure:
+
+- Navigation opens and closes correctly.
+- Keyboard focus is managed appropriately.
+- The drawer does not cover important controls when closed.
+- Current-page highlighting remains visible.
+- Touch targets are comfortable to use.
+
+Do not simply shrink the desktop sidebar until its labels become unreadable.
+
+---
+
+# PART X. DASHBOARD
+
+## 10. DASHBOARD PURPOSE
+
+Create a useful recruitment overview, not merely a collection of decorative cards.
+
+The dashboard must summarise the actual frontend demonstration data.
+
+## 10.1 Summary metrics
+
+Display:
+
+- Total Candidates.
+- Total Applications.
+- Open Jobs.
+- Open Vacancies.
+- Interviews Scheduled.
+- Total Employees.
+- Applications Awaiting Review.
+
+Calculate these values from the current local dataset.
+
+Do not hardcode the displayed totals.
+
+Define each metric consistently.
+
+For example, "Total Employees" should count employee records rather than candidates.
+
+"Open Vacancies" should be derived from open jobs and their vacancy counts, subject to the rules in the supplied schema.
+
+"Applications Awaiting Review" should use an explicitly defined status rule that is documented in the code.
+
+Avoid counting the same record twice.
+
+## 10.2 Dashboard layout
+
+Use a deliberate hierarchy:
+
+1. Page heading and contextual introduction.
+2. High-level summary cards.
+3. Recruitment analytics.
+4. Recent local activity.
+5. Upcoming interviews.
+6. Recent applications.
+
+Do not put every possible component above the fold.
+
+Allow the user to scan the most important information quickly.
+
+## 10.3 Charts
+
+Provide useful charts for:
+
+- Applications by status.
+- Vacancies by department.
+- Recruitment activity over time.
+- Interview status distribution.
+- Employee distribution by department where the underlying local data supports the relationship.
+
+Use an existing chart library if one is already installed.
+
+Otherwise, use a lightweight charting solution or carefully implemented SVG.
+
+Ensure the charts:
+
+- Use real calculated values from local state.
+- Update after relevant mutations.
+- Adapt to light and dark themes.
+- Have accessible labels.
+- Include empty states.
+- Remain readable on mobile.
+- Do not use misleading scales.
+- Do not invent trends.
+
+If there is insufficient historical data for a meaningful time-series chart, show an honest empty state or a clearly labelled demonstration trend rather than inventing actual company performance.
+
+## 10.4 Recent activity
+
+Maintain a frontend-only activity log for operations performed during the current demonstration.
+
+Examples:
+
+- Candidate added.
+- Job created.
+- Application status changed.
+- Interview scheduled.
+- Employee created.
+
+These entries must be generated from actual local actions.
+
+Do not display fabricated corporate activity as if it were genuine.
+
+## 10.5 Functional dashboard controls
+
+Implement:
+
+- Date-range filters where relevant.
+- Department filters.
+- Application-status filters.
+- Navigation to relevant records.
+- Refresh of locally calculated summaries.
+
+Refreshing the dashboard should recalculate values from the current local data.
+
+Do not implement a refresh button that only animates.
+
+---
+
+# PART XI. DATABASE-ALIGNED FRONTEND DATA MODEL
+
+## 11. GENERAL RULE
+
+The data models must follow the actual definitions in `MiniProject Code.pdf`.
+
+The following sections describe the entities that the supplied project uses. They are not permission to invent additional Oracle columns.
+
+If a field's precise type, length, default, or constraint is not reproduced below, inspect the SQL document and use the actual definition.
+
+Use TypeScript interfaces or equivalent typed models.
+
+Keep the database-facing field names recognisable.
+
+Use separate presentation models when the interface needs additional calculated values.
+
+## 11.1 ER_DEPARTMENT
+
+Use the supplied department model.
+
+The supplied project includes:
+
+- `DEPT_ID`
+- `DEPT_NAME`
+
+Departments must be referenced through their actual identifiers.
+
+Do not associate a job with a department by matching display names alone when an identifier is available.
+
+## 11.2 ER_JOB
+
+Use the supplied job fields:
+
+- `JOB_ID`
+- `JOB_TITLE`
+- `DEPT_ID`
+- `JOB_DESCRIPTION`
+- `MIN_SALARY`
+- `MAX_SALARY`
+- `VACANCIES`
+
+Inspect the SQL document for the complete table definition and any additional fields or constraints.
+
+The supplied SQL also contains a department-wise vacancy query that filters jobs using `JOB_STATUS = 'OPEN'`.
+
+Verify the actual `ER_JOB` definition and implementation in the PDF before treating `JOB_STATUS` as a persisted field.
+
+Do not invent a status column if the supplied table does not define one.
+
+If a status must be simulated solely in the frontend, identify it as frontend-only metadata and do not claim that it is persisted in the Oracle schema.
+
+## 11.3 ER_CANDIDATE
+
+Use the supplied candidate fields:
+
+- `CANDIDATE_ID`
+- `FULL_NAME`
+- `EMAIL`
+- `PHONE`
+- `QUALIFICATION`
+- `EXPERIENCE_YEARS`
+- `CREATED_DATE`
+
+Use the existing sequence concept when generating demonstration IDs, but do not attempt to access an Oracle sequence.
+
+The browser implementation must generate IDs without collisions.
+
+Email uniqueness must be enforced within the local demonstration data.
+
+## 11.4 ER_APPLICATION
+
+Use the supplied application fields:
+
+- `APPLICATION_ID`
+- `CANDIDATE_ID`
+- `JOB_ID`
+- `APPLICATION_DATE`
+- `APPLICATION_STATUS`
+- `REMARKS`
+
+The supplied SQL defines a unique constraint on the candidate/job combination.
+
+It also defines the following allowed application statuses:
+
+- `APPLIED`
+- `SHORTLISTED`
+- `INTERVIEW`
+- `SELECTED`
+- `REJECTED`
+- `HIRED`
+
+Use these exact values in the underlying frontend model.
+
+Human-readable labels may be formatted for display.
+
+Do not introduce unsupported persisted status values.
+
+For example, do not use `PENDING` as an application status unless the supplied schema is deliberately changed in a separately documented future project.
+
+## 11.5 ER_INTERVIEW
+
+Use the supplied interview fields:
+
+- `INTERVIEW_ID`
+- `APPLICATION_ID`
+- `INTERVIEW_ROUND`
+- `INTERVIEW_DATE`
+- `INTERVIEW_MODE`
+- `INTERVIEWER_NAME`
+- `SCORE`
+- `FEEDBACK`
+- `INTERVIEW_STATUS`
+
+The supplied SQL defines:
+
+- Interview modes: `ONLINE`, `OFFLINE`.
+- Interview statuses: `SCHEDULED`, `COMPLETED`, `CANCELLED`.
+- A score constraint of 0 through 100 when a score is supplied.
+- A unique application/round combination.
+
+Preserve these constraints in the frontend validation.
+
+The interview round is numeric in the supplied schema.
+
+Do not replace it with arbitrary text values in the stored model.
+
+If the UI displays a label such as "Technical Round", maintain a valid numeric round and store the descriptive label only if supported by the model or explicitly identified as frontend-only metadata.
+
+## 11.6 ER_EMPLOYEE
+
+Use the supplied employee fields:
+
+- `EMPLOYEE_ID`
+- `APPLICATION_ID`
+- `CANDIDATE_ID`
+- `JOINING_DATE`
+- `DESIGNATION`
+- `ANNUAL_SALARY`
+- `EMPLOYMENT_STATUS`
+
+The supplied schema requires an application and candidate relationship.
+
+The application ID and candidate ID are unique within the employee table.
+
+The employment status is restricted to:
+
+- `ACTIVE`
+- `INACTIVE`
+
+Preserve these relationships and restrictions.
+
+An employee cannot be created as an independent, unlinked record while claiming to conform to the supplied schema.
+
+The employee-creation form must therefore require a valid application and its associated candidate, unless the supplied SQL document explicitly defines an alternative mechanism.
+
+## 11.7 ER_APPLICATION_AUDIT
+
+The supplied project includes an application-status audit table containing:
+
+- `AUDIT_ID`
+- `APPLICATION_ID`
+- `OLD_STATUS`
+- `NEW_STATUS`
+- `CHANGE_DATE`
+- `CHANGED_BY`
+
+Use the actual table definition in the PDF.
+
+The supplied trigger records status changes.
+
+Reproduce this behaviour in the frontend's local state when an application's status changes.
+
+For each actual local status transition, record the previous status, new status, change time, and demonstration actor.
+
+Clearly label this as a local audit simulation.
+
+Do not claim that the Oracle trigger has executed.
+
+## 11.8 Supplied views
+
+The supplied SQL includes:
+
+- `ER_V_CANDIDATE_APPLICATION`
+- `ER_V_INTERVIEW_DETAILS`
+
+Use these views as references for the relationships and useful combined information shown in the application.
+
+The frontend does not need to execute SQL views.
+
+Instead, implement equivalent selectors or derived-data functions using the local records.
+
+Keep the underlying records normalised and calculate combined displays from their relationships.
+
+Do not store multiple conflicting copies of the same candidate or application information unnecessarily.
+
+---
+
+# PART XII. INITIAL DEMONSTRATION DATA
+
+## 12. INITIAL DATA
+
+Use the initial records from the supplied SQL document wherever possible.
+
+The supplied project includes the following departments:
+
+| Department ID | Department name |
+|---|---|
+| 1 | Human Resources |
+| 2 | Information Technology |
+| 3 | Finance |
+| 4 | Data Science |
+| 5 | DBMS and Database Administration |
+| 6 | Software Development |
+| 7 | Data Analytics |
+
+Use these as the initial department dataset.
+
+The supplied project also contains job examples such as:
+
+- HR Executive.
+- Software Developer.
+- Financial Analyst.
+- Data Scientist.
+- Database Administrator.
+- Application Developer.
+- Data Analyst.
+
+Use the actual job records and salary ranges from the SQL PDF.
+
+Use the actual candidate and application records wherever available.
+
+Do not assume that every example in the PDF is a current database record if it appears only inside a procedure call or demonstration statement.
+
+Inspect the SQL statements and distinguish inserted records from example parameters.
+
+## 12.1 Synthetic records
+
+If more records are needed to demonstrate pagination, filters, charts, or empty states, create clearly identifiable synthetic records.
+
+Synthetic records must:
+
+- Use valid relationships.
+- Respect the supplied constraints.
+- Have unique IDs and emails.
+- Avoid collisions with existing records.
+- Be identified as local demonstration data.
+- Avoid implying real corporate activity.
+
+Do not fabricate genuine employee information.
+
+Do not invent real Blue Star employees, real interview outcomes, or actual recruitment statistics.
+
+## 12.2 Dataset reset
+
+Implement a working "Reset Demo Data" action.
+
+Before resetting, show a confirmation dialog explaining that locally created demonstration changes will be discarded.
+
+After confirmation:
+
+1. Restore the initial demonstration dataset.
+2. Restore the initial application state.
+3. Clear local activity entries that were created after the reset baseline.
+4. Refresh all displayed statistics.
+5. Refresh all relevant tables and charts.
+6. Display a clear completion message.
+
+The reset must not affect any real database because no backend exists.
+
+---
+
+# PART XIII. CANDIDATE MANAGEMENT
+
+## 13. CANDIDATE DIRECTORY
+
+Create a complete candidate-management page.
+
+Use a polished data table on desktop and an appropriate card or responsive table layout on smaller screens.
+
+Display:
+
+- Candidate ID.
+- Full name.
+- Email.
+- Phone.
+- Qualification.
+- Experience.
+- Created date.
+- Application count, calculated from linked applications.
+
+Do not invent candidate profile fields that are not present in the source schema unless they are explicitly labelled as presentation-only additions.
+
+## 13.1 Search and filtering
+
+Implement:
+
+- Search by candidate name.
+- Search by email.
+- Search by candidate ID.
+- Qualification filters.
+- Experience filters.
+- Sorting by name.
+- Sorting by created date.
+- Sorting by experience.
+- Pagination or functional load-more behaviour.
+
+Search and filters must work together.
+
+Clearing one filter must not unintentionally erase unrelated filters.
+
+The displayed count must reflect the filtered results.
+
+## 13.2 Candidate details
+
+Clicking a candidate should open a polished profile dialog or dedicated detail page.
+
+Show:
+
+- Candidate information.
+- Associated applications.
+- Related jobs.
+- Application statuses.
+- Related interviews where available.
+- Related employee record, if one exists.
+
+Calculate relationships from the local data.
+
+Do not display invented information as if it were stored in the database.
+
+## 13.3 Add candidate
+
+Provide a prominent "Add Candidate" action.
+
+Open a well-designed form with:
+
+- Full name.
+- Email.
+- Phone.
+- Qualification.
+- Experience in years.
+
+Use accessible labels and clear validation.
+
+Validate:
+
+- Required fields.
+- Email format.
+- Phone format appropriate for the intended demonstration.
+- Non-negative experience.
+- Reasonable input lengths.
+- Duplicate email addresses.
+
+On submission:
+
+1. Validate the form.
+2. Generate a unique candidate ID.
+3. Create the local candidate record.
+4. Add the record to shared application state.
+5. Persist the updated dataset when local storage is enabled.
+6. Refresh the directory.
+7. Refresh dashboard statistics.
+8. Close the dialog.
+9. Display a success notification.
+
+If validation fails, display field-level errors.
+
+Do not clear the form silently.
+
+Do not show a success notification before the record is created.
+
+---
+
+# PART XIV. JOB AND VACANCY MANAGEMENT
+
+## 14. JOBS PAGE
+
+Create a complete jobs and vacancies interface.
+
+Use the supplied job schema and actual constraints.
+
+Display:
+
+- Job ID.
+- Job title.
+- Department.
+- Job description.
+- Minimum salary.
+- Maximum salary.
+- Vacancies.
+- Any verified status field present in the supplied schema.
+- Any relevant posting information that is actually available.
+
+Do not display fabricated job posting dates as actual database values.
+
+If the frontend requires a posting date for newly created local records, clearly handle it as a local creation timestamp if the database schema does not provide a corresponding field.
+
+## 14.1 Job operations
+
+Implement:
+
+- Search by job title.
+- Filter by department.
+- Sort by job title.
+- Sort by vacancies.
+- View job details.
+- Create a job.
+- Edit a job.
+- Update vacancies.
+- Manage any supported job-status information.
+
+Validate:
+
+- Required title.
+- Valid department reference.
+- Minimum salary not greater than maximum salary.
+- Non-negative salary values.
+- Non-negative vacancy count.
+- Appropriate input lengths.
+
+Use the correct relationships.
+
+Do not associate jobs with departments that do not exist in the local dataset.
+
+## 14.2 Vacancy calculations
+
+The supplied SQL includes a department-wise query that counts open jobs and sums their vacancies.
+
+Implement equivalent calculations in the frontend using the actual model.
+
+Do not count a closed job as an open vacancy.
+
+If the supplied schema does not persist job status, do not pretend that a status change was saved to the Oracle database.
+
+Any additional local status metadata must be clearly identified as frontend-only.
+
+## 14.3 Destructive operations
+
+If job deletion is implemented:
+
+- Ask for confirmation.
+- Check for linked applications.
+- Prevent accidental removal of referenced records.
+- Explain why an operation is blocked.
+- Preserve the integrity of the local dataset.
+
+Do not cascade-delete candidates, applications, or interviews without explicit, justified behaviour.
+
+---
+
+# PART XV. APPLICATION MANAGEMENT
+
+## 15. APPLICATION DIRECTORY
+
+Create a functional applications page.
+
+Display:
+
+- Application ID.
+- Candidate name.
+- Job title.
+- Department.
+- Application date.
+- Application status.
+- Remarks.
+
+Derive candidate names and job information from their linked records.
+
+Do not duplicate those values as independently editable fields.
+
+## 15.1 Search and filtering
+
+Implement:
+
+- Search by application ID.
+- Search by candidate name.
+- Search by job title.
+- Filter by status.
+- Filter by department.
+- Filter by date.
+- Sort by application date.
+- Sort by status.
+
+Use the exact status values from the supplied schema.
+
+Display them as polished status badges.
+
+## 15.2 Create application
+
+Provide an "Add Application" form.
+
+Allow the user to select:
+
+- An existing candidate.
+- An existing job.
+- Optional remarks, where supported.
+
+The application date may default to the current date in local state, consistent with the supplied schema's default behaviour.
+
+Set the initial application status to `APPLIED`.
+
+Validate:
+
+- Candidate exists.
+- Job exists.
+- The candidate/job combination does not already have an application.
+- All required references are valid.
+
+If the job is represented as closed in frontend-only status metadata, prevent a new application where that is the chosen product rule and clearly document the rule.
+
+On success:
+
+1. Generate a unique application ID.
+2. Create the local application record.
+3. Update the applications table.
+4. Update candidate application counts.
+5. Update dashboard statistics.
+6. Update relevant charts.
+7. Record the local activity event.
+
+The application must actually be added to the shared local data.
+
+## 15.3 Application status updates
+
+Provide a controlled status-change action.
+
+Only allow values supported by the supplied schema:
+
+- `APPLIED`
+- `SHORTLISTED`
+- `INTERVIEW`
+- `SELECTED`
+- `REJECTED`
+- `HIRED`
+
+Use an accessible dropdown or dialog.
+
+When a status changes:
+
+1. Record the old status.
+2. Validate the new status.
+3. Update the local application record.
+4. Create a local audit entry.
+5. Update the interface.
+6. Update the dashboard.
+7. Display a success notification.
+
+Prevent invalid status values.
+
+Do not create duplicate audit entries for a change that did not occur.
+
+Do not claim the database trigger has run.
+
+## 15.4 Hiring action
+
+Implement a carefully controlled "Hire Candidate" workflow.
+
+This operation is one of the most important parts of the application.
+
+The supplied SQL includes the procedure `ER_HIRE_CANDIDATE`, which updates an application and creates an employee record.
+
+The frontend must simulate the business outcome while remaining completely disconnected from Oracle.
+
+When the user chooses to hire a candidate:
+
+1. Open a confirmation dialog.
+2. Display the candidate's name.
+3. Display the associated application.
+4. Display the relevant job and department.
+5. Request the required designation and annual salary where appropriate.
+6. Validate the application reference.
+7. Verify that the application is not already marked `HIRED`.
+8. Verify that no employee record already exists for the application.
+9. Verify that the candidate does not already have an employee record, respecting the supplied unique constraint.
+10. Validate the salary and designation.
+11. Update the application status to `HIRED`.
+12. Create the employee record.
+13. Link the employee to the correct application and candidate.
+14. Assign a unique employee ID.
+15. Populate the joining date.
+16. Set employment status to `ACTIVE`.
+17. Create the local audit entry for the status transition.
+18. Update the shared state consistently.
+19. Update dashboard statistics.
+20. Refresh the application and employee directories.
+21. Record a local activity event.
+22. Display a success notification.
+
+### Atomicity requirement
+
+Treat hiring as one logical local transaction.
+
+Validate every precondition before changing the shared state.
+
+If any step fails, do not leave the application marked `HIRED` without the corresponding employee record.
+
+Do not create duplicate employees.
+
+Do not partially update related records.
+
+Use a reducer, transaction-like state operation, or another clear approach to update the related records consistently.
+
+If the operation is invalid, show a useful error message and leave the previous state unchanged.
+
+### Already-hired applications
+
+If an application is already `HIRED`, prevent another hiring operation.
+
+If an employee already exists for the application or candidate, do not create another employee.
+
+Display a clear explanation rather than allowing the operation to fail silently.
+
+---
+
+# PART XVI. EMPLOYEE MANAGEMENT
+
+## 16. EMPLOYEES PAGE
+
+Create a dedicated employee directory.
+
+This page must be fully functional.
+
+Display:
+
+- Employee ID.
+- Candidate name.
+- Application ID.
+- Designation.
+- Joining date.
+- Annual salary.
+- Employment status.
+
+Where the underlying data supports it, also display:
+
+- Job title.
+- Department.
+
+Derive these values from the linked candidate, application, and job records.
+
+Do not invent a department field on the employee record if the supplied schema does not define one.
+
+## 16.1 Search and filtering
+
+Implement:
+
+- Search by employee ID.
+- Search by candidate name.
+- Search by designation.
+- Filter by employment status.
+- Filter by department through the related job, where supported.
+- Sort by joining date.
+- Sort by salary.
+- Sort by designation.
+
+All filters must affect the actual displayed records.
+
+## 16.2 Create employee
+
+Place a prominent "Create Employee" button on the page.
+
+The form should use a polished dialog or a dedicated creation screen.
+
+Include:
+
+- Candidate selection.
+- Application selection.
+- Designation.
+- Joining date.
+- Annual salary.
+- Employment status.
+
+### Relationship handling
+
+The supplied schema requires a valid application and candidate reference.
+
+Therefore, the form must not allow a standalone employee record without those references.
+
+A user must select a valid application and the candidate associated with that application.
+
+Alternatively, provide a clearly labelled workflow that begins by selecting an existing candidate and then selecting one of that candidate's applications.
+
+Once the application is selected, populate the candidate information automatically.
+
+Do not allow the user to select a candidate unrelated to the chosen application.
+
+Do not invent an application ID.
+
+Do not create a candidate or application silently as a side effect of employee creation.
+
+If there is no suitable application, explain that the candidate must first have an application.
+
+If an employee already exists for the application or candidate, prevent the duplicate.
+
+## 16.3 Employee creation validation
+
+Validate:
+
+- Candidate exists.
+- Application exists.
+- Candidate and application belong together.
+- Employee ID is unique.
+- Application ID is unique within the employee records.
+- Candidate ID is unique within the employee records.
+- Designation is provided.
+- Joining date is valid where required.
+- Salary is a valid non-negative amount.
+- Employment status is `ACTIVE` or `INACTIVE`.
+
+If the user creates an employee directly through this form, the application status must not be changed automatically unless the workflow explicitly includes a hiring transition.
+
+If the user creates the employee through the hiring workflow, update the application and employee together.
+
+These two operations must remain distinct.
+
+## 16.4 Employee editing
+
+Allow appropriate employee fields to be edited.
+
+Support:
+
+- Designation.
+- Joining date.
+- Annual salary.
+- Employment status.
+
+Respect the supplied model.
+
+Do not allow casual editing of foreign keys in a way that creates invalid relationships.
+
+If a relationship needs to change, implement a controlled operation with validation.
+
+Changing employment status to `INACTIVE` must not delete the employee.
+
+## 16.5 Employee details
+
+Clicking an employee opens a profile panel or details page.
+
+Show the employee's actual local record and relevant linked information.
+
+Where appropriate, show:
+
+- Candidate contact information.
+- Qualification.
+- Experience.
+- Associated application.
+- Job.
+- Department.
+- Joining date.
+- Designation.
+- Annual salary.
+- Employment status.
+
+Clearly distinguish stored model values from calculated display values.
+
+---
+
+# PART XVII. INTERVIEW MANAGEMENT
+
+## 17. INTERVIEWS PAGE
+
+Create a complete interview-management interface.
+
+Use the supplied `ER_INTERVIEW` schema.
+
+Display:
+
+- Interview ID.
+- Candidate.
+- Application ID.
+- Job title.
+- Interview round.
+- Interview date.
+- Interview mode.
+- Interviewer.
+- Score.
+- Feedback.
+- Interview status.
+
+Candidate and job information must be derived from the linked application.
+
+## 17.1 Scheduling interviews
+
+Provide a "Schedule Interview" action.
+
+The form should include:
+
+- Application selection.
+- Interview round.
+- Date and time.
+- Interview mode.
+- Interviewer name.
+
+Use a numeric interview round in the stored model.
+
+Use `ONLINE` or `OFFLINE` as the interview mode.
+
+Default the status to `SCHEDULED`.
+
+Validate:
+
+- Application exists.
+- Round is a valid positive integer.
+- Application/round combination is unique.
+- Interview date is valid.
+- Interview mode is valid.
+- Interviewer name is supplied when required.
+
+Do not allow duplicate rounds for the same application.
+
+## 17.2 Interview feedback
+
+Provide a way to edit the score and feedback.
+
+Validate scores from 0 through 100.
+
+Allow a score to remain empty when appropriate.
+
+Allow the interview status to be changed to `COMPLETED` or `CANCELLED` where appropriate.
+
+Do not permit unsupported status values.
+
+Update dashboard statistics and the local activity log after actual changes.
+
+## 17.3 Calendar and list views
+
+If practical, provide a compact calendar or date-grouped interview view in addition to the table.
+
+It must use actual local interview records.
+
+Provide a clear empty state when no interviews are scheduled.
+
+Do not fabricate interviews merely to make the calendar look full.
+
+---
+
+# PART XVIII. DEPARTMENT MANAGEMENT
+
+## 18. DEPARTMENTS PAGE
+
+Create a department directory using the supplied `ER_DEPARTMENT` model.
+
+Display:
+
+- Department ID.
+- Department name.
+- Related job count.
+- Open vacancy count where the job status information supports it.
+- Candidate and employee summaries where those relationships can be derived reliably.
+
+Implement:
+
+- Search.
+- Sorting.
+- Department details.
+- Create department.
+- Edit department.
+
+Use the supplied department IDs and names as the initial dataset.
+
+Prevent duplicate department names.
+
+Validate required values.
+
+Do not silently delete a department that is referenced by a job.
+
+If a deletion is implemented, check related records first and provide a clear explanation when the operation is blocked.
+
+Do not create unsupported department fields such as location, manager, or budget unless they are explicitly identified as frontend-only enhancements and are genuinely necessary.
+
+The first implementation should prioritise fidelity to the supplied schema.
+
+---
+
+# PART XIX. REPORTS AND ANALYTICS
+
+## 19. REPORTS PAGE
+
+Create a polished reports interface using the actual local dataset.
+
+Include reports for:
+
+1. Applications by status.
+2. Candidate distribution by department through associated applications.
+3. Job and vacancy summaries by department.
+4. Interview status distribution.
+5. Employee counts by employment status.
+6. Employee distribution by department through the linked job where possible.
+7. Recruitment activity derived from local activity records.
+8. Hiring outcomes based on employee and application records.
+
+Avoid inventing data for relationships that cannot be derived.
+
+If a report cannot be meaningfully calculated because the required data is missing, explain that limitation.
+
+## 19.1 Filters
+
+Provide relevant filters:
+
+- Date range.
+- Department.
+- Application status.
+- Interview status.
+- Employment status.
+
+Do not show filters that have no effect.
+
+## 19.2 CSV export
+
+Implement actual CSV export for relevant tables and reports.
+
+The export must:
+
+- Contain the displayed data.
+- Respect active filters where applicable.
+- Use meaningful column headers.
+- Handle commas, quotes, and line breaks correctly.
+- Generate a downloadable file.
+- Use a clear filename.
+
+Do not create an export button that simply opens a notification.
+
+If PDF export is included, it must generate an actual readable PDF.
+
+CSV export is sufficient for the initial implementation if a reliable PDF implementation would unnecessarily complicate the project.
+
+---
+
+# PART XX. LOGIN AND DEMONSTRATION ACCOUNTS
+
+## 20. LOGIN SCREEN
+
+Create a professional login interface consistent with the rest of the design.
+
+Use:
+
+- Blue Star branding.
+- Application name.
+- Warm textured background.
+- Refined glass-inspired surfaces.
+- Email or username field.
+- Password field.
+- Show/hide password control.
+- Sign-in button.
+- Field validation.
+- Clear error messages.
+
+Do not create a backend authentication system.
+
+## 20.1 Local demonstration login
+
+Implement a small, explicit frontend-only demonstration login flow.
+
+Use clearly documented dummy credentials.
+
+For example:
+
+Username: `demo.employee`
+
+Password: `demo.employee`
+
+These are example demonstration credentials only.
+
+If the project uses a different username/password pair, keep it consistent throughout the application and document it in the final report.
+
+The example follows the requested `firstname.lastname` convention.
+
+Do not derive passwords from real employee names.
+
+Do not generate actual employee accounts.
+
+Do not claim that the login is secure authentication.
+
+Do not store real employee passwords.
+
+Do not create a user-management table that pretends to exist in the supplied database schema.
+
+The login should validate the configured demonstration credentials before granting access to the dashboard.
+
+Invalid credentials must display a useful error.
+
+A user must not be able to access protected application routes merely because they know the route URL.
+
+## 20.2 Session behaviour
+
+Use a simple local demonstration session.
+
+Persist only the minimal state necessary to maintain the demo login.
+
+Provide a functional sign-out action.
+
+After sign-out, protected routes should return to the login screen.
+
+Do not claim that this is a secure session-management system.
+
+Make the local authentication logic easy to replace when a genuine backend is introduced.
+
+---
+
+# PART XXI. LIGHT MODE AND DARK MODE
+
+## 21. GLOBAL THEME SWITCHING
+
+Implement a functional theme toggle.
+
+Place it in a consistent location.
+
+The user must be able to switch between light and dark modes without refreshing the application.
+
+Use a clear icon and accessible label.
+
+Persist the selected theme in local storage.
+
+Apply the selected theme across:
+
+- Landing page.
+- Login page.
+- Dashboard.
+- Sidebar.
+- Navigation bar.
+- Tables.
+- Forms.
+- Dialogs.
+- Dropdowns.
+- Charts.
+- Tooltips.
+- Notifications.
+- Empty states.
+- Reports.
+- Settings.
+
+Do not implement dark mode only on the landing page.
+
+## 21.1 Theme transitions
+
+Use restrained transitions when changing themes.
+
+Avoid a long flash of the wrong theme on initial loading where practical.
+
+Ensure that all text remains readable.
+
+Check border contrast and glass transparency in both modes.
+
+Do not make dark-mode surfaces excessively transparent.
+
+Do not use pure-white text everywhere when softer off-white provides better visual comfort.
+
+---
+
+# PART XXII. SETTINGS
+
+## 22. SETTINGS PAGE
+
+Create a practical settings page.
+
+Include:
+
+- Theme preference.
+- Demonstration account information.
+- Application information.
+- Local data status.
+- Reset demonstration data.
+- Sign out.
+
+Clearly indicate that the data is stored locally.
+
+Provide a short explanation that this frontend is not connected to the Oracle database.
+
+The reset operation must use a confirmation dialog.
+
+Do not include pretend settings for email delivery, database connections, cloud backups, or authentication providers that do not exist.
+
+Do not expose environment variables or secrets.
+
+---
+
+# PART XXIII. NOTIFICATIONS, DIALOGS, AND FORMS
+
+## 23. CONSISTENT INTERACTION SYSTEM
+
+Create reusable components for:
+
+- Buttons.
+- Text inputs.
+- Select controls.
+- Date controls.
+- Status badges.
+- Tables.
+- Search fields.
+- Filter panels.
+- Dialogs.
+- Confirmation prompts.
+- Toast notifications.
+- Empty states.
+- Loading states.
+- Pagination.
+
+Avoid implementing a completely different interaction pattern on every page.
+
+## 23.1 Dialog behaviour
+
+Dialogs must:
+
+- Open through the relevant action.
+- Close through a clearly labelled button.
+- Close through Escape where appropriate.
+- Manage keyboard focus.
+- Prevent accidental background interaction.
+- Remain usable on mobile.
+- Validate their forms.
+- Display clear errors.
+
+Do not make dialogs impossible to dismiss.
+
+## 23.2 Toast notifications
+
+Provide concise feedback after successful operations.
+
+Examples:
+
+- Candidate created successfully.
+- Application updated successfully.
+- Interview scheduled successfully.
+- Employee created successfully.
+- Demonstration data reset successfully.
+
+Only display a success notification after the underlying local operation succeeds.
+
+For errors, explain what failed and how the user can correct it.
+
+Avoid displaying raw JavaScript errors to the user.
+
+## 23.3 Form validation
+
+Validate both when appropriate during entry and when the form is submitted.
+
+Do not rely exclusively on browser-native alerts.
+
+Use inline field messages.
+
+Preserve the user's entered values after validation errors.
+
+Disable repeated submissions while an operation is being processed.
+
+---
+
+# PART XXIV. LOCAL DATA ARCHITECTURE
+
+## 24. SHARED STATE
+
+Create a single, coherent frontend data layer.
+
+Do not keep independent copies of the candidate, job, application, interview, and employee datasets inside unrelated page components.
+
+Use a suitable approach such as:
+
+- React Context with reducers.
+- A lightweight state library already installed.
+- A small, well-defined application store.
+
+Choose the simplest architecture that meets the requirements.
+
+## 24.1 Normalised data
+
+Keep primary entities separate.
+
+For example:
+
+- Candidate records remain in the candidate collection.
+- Job records remain in the job collection.
+- Applications reference candidates and jobs by ID.
+- Interviews reference applications by ID.
+- Employees reference applications and candidates by ID.
+- Audit records reference the relevant application ID.
+
+Calculate combined views through selectors or derived functions.
+
+Do not duplicate candidate names across every application record as the source of truth.
+
+## 24.2 Operation layer
+
+Provide clearly defined local operations for:
+
+- Adding a candidate.
+- Editing a candidate where permitted.
+- Creating a job.
+- Editing a job.
+- Creating an application.
+- Updating an application status.
+- Scheduling an interview.
+- Updating interview feedback.
+- Creating an employee.
+- Hiring a candidate.
+- Updating employee status.
+- Creating a department.
+- Editing a department.
+- Resetting demonstration data.
+
+Each operation must validate its inputs and preserve the integrity of related records.
+
+Keep the data-operation logic separate from the page components.
+
+## 24.3 Persistence
+
+Use local storage for the demonstration dataset where appropriate.
+
+Handle malformed or unavailable stored data gracefully.
+
+Use a versioned storage key or another simple migration-safe strategy.
+
+If stored data cannot be parsed, display a safe fallback or restore the default demonstration dataset with an appropriate message.
+
+Do not silently corrupt the data.
+
+Persist successful local mutations.
+
+Do not persist secrets.
+
+## 24.4 Unique identifiers
+
+The Oracle project uses sequences.
+
+The browser must not attempt to call those sequences.
+
+Implement a deterministic local ID-generation strategy that avoids collisions with the initial dataset and previously created records.
+
+Inspect existing IDs before generating new ones.
+
+Do not rely solely on a timestamp that might collide.
+
+Use a central ID-generation function or another reliable approach.
+
+The IDs must remain valid for the frontend's demonstration model.
+
+## 24.5 Data integrity
+
+Enforce the important supplied constraints in the local data layer.
+
+At minimum:
+
+- Candidate IDs are unique.
+- Candidate emails are unique.
+- Job IDs are unique.
+- Application IDs are unique.
+- A candidate/job combination cannot have duplicate applications.
+- An interview round cannot be duplicated for the same application.
+- Employee IDs are unique.
+- Employee application IDs are unique.
+- Employee candidate IDs are unique.
+- Employee application and candidate references are valid.
+- Application statuses use the allowed values.
+- Interview modes use the allowed values.
+- Interview statuses use the allowed values.
+- Employee statuses use the allowed values.
+- Interview scores remain within the permitted range.
+
+Do not rely solely on disabled buttons to enforce these rules.
+
+The central operation layer must validate them.
+
+---
+
+# PART XXV. ACCESSIBILITY AND RESPONSIVE DESIGN
+
+## 25. RESPONSIVE LAYOUTS
+
+Support common desktop, laptop, tablet, and mobile viewports.
+
+### Desktop
+
+Use the full sidebar, multi-column dashboard, spacious forms, and data tables.
+
+### Tablet
+
+Reduce column counts and adjust navigation.
+
+### Mobile
+
+Use compact navigation, stacked cards, responsive dialogs, and mobile-friendly forms.
+
+Data tables may become horizontally scrollable or use a carefully designed card presentation where that improves usability.
+
+Do not allow the entire page to overflow horizontally.
+
+Do not make text unreadably small to preserve a desktop layout.
+
+## 25.1 Accessibility
+
+Implement:
+
+- Semantic HTML.
+- Correct heading hierarchy.
+- Labels for form controls.
+- Accessible buttons.
+- Keyboard navigation.
+- Visible focus states.
+- Appropriate contrast.
+- Accessible dialog behaviour.
+- Status labels that do not rely on colour alone.
+- Reduced-motion support.
+
+Icons must not be the sole means of communicating an action when the action is not obvious.
+
+Provide tooltips or labels for icon-only controls.
+
+Do not sacrifice accessibility for visual effects.
+
+---
+
+# PART XXVI. TECHNICAL QUALITY
+
+## 26. IMPLEMENTATION STANDARDS
+
+Reuse the existing project structure if one is provided.
+
+If starting from scratch, use a modern frontend framework and a clear component architecture.
+
+Use TypeScript where supported.
+
+Use CSS variables for the design system.
+
+Keep theme logic centralised.
+
+Use reusable form and dialog components.
+
+Avoid excessively large components that combine unrelated data operations and presentation.
+
+Do not create unnecessary abstractions.
+
+Do not install large dependencies solely to animate a few buttons.
+
+Do not replace working dependencies without a clear reason.
+
+Do not expose secrets.
+
+Do not use fake API endpoints.
+
+Do not add server-side code.
+
+## 26.1 Code quality
+
+The implementation must be:
+
+- Readable.
+- Maintainable.
+- Consistent.
+- Responsive.
+- Typed where appropriate.
+- Free of avoidable duplication.
+- Free of unused imports where detectable.
+- Free of obvious console errors.
+- Suitable for future backend integration.
+
+## 26.2 Performance
+
+Avoid:
+
+- Excessive component re-rendering.
+- Unnecessary animation libraries.
+- Large unoptimised images.
+- Continuous expensive blur effects.
+- Unnecessary state duplication.
+- Layout shifts.
+- Repeated full-dataset recalculation where a simple selector would suffice.
+
+Use memoisation only where it provides a meaningful benefit.
+
+Prioritise predictable, maintainable behaviour over premature optimisation.
+
+---
+
+# PART XXVII. IMPLEMENTATION SEQUENCE
+
+## 27. FOLLOW THIS ORDER
+
+Do not attempt to produce the entire application as an unverified collection of disconnected components.
+
+Implement the project in controlled stages.
+
+### Stage 1: Audit
+
+Inspect the supplied files.
+
+Identify the framework, routes, components, dependencies, assets, and SQL entities.
+
+Record the existing application behaviour.
+
+Do not begin by deleting or replacing the project.
+
+### Stage 2: Data modelling
+
+Create the frontend models corresponding to the supplied schema.
+
+Implement:
+
+- Initial dataset.
+- Relationship selectors.
+- Unique ID generation.
+- Validation helpers.
+- Local persistence.
+- Data reset.
+- Core local operations.
+
+Verify the relationships before building the interface around them.
+
+### Stage 3: Design system
+
+Implement:
+
+- Colour tokens.
+- Typography.
+- Spacing.
+- Background texture.
+- Glass surfaces.
+- Button styles.
+- Borders.
+- Status badges.
+- Theme switching.
+- Animation rules.
+
+Test the visual system in both themes.
+
+### Stage 4: Landing page
+
+Build the complete MotionSites-inspired hero.
+
+Implement:
+
+- Navigation.
+- Hero copy.
+- Glass composition.
+- Geometric background.
+- CTA actions.
+- Supporting sections.
+- Footer.
+- Responsive layout.
+
+Verify the exact browser title and favicon.
+
+### Stage 5: Application shell
+
+Implement:
+
+- Demonstration login.
+- Route protection.
+- Sidebar.
+- Header.
+- Theme toggle.
+- Notifications.
+- Shared dialogs.
+- Responsive navigation.
+
+### Stage 6: Dashboard
+
+Implement calculated metrics, charts, recent activity, and navigation to relevant records.
+
+Verify that the metrics update after data changes.
+
+### Stage 7: Management pages
+
+Build:
+
+1. Candidates.
+2. Jobs.
+3. Applications.
+4. Interviews.
+5. Employees.
+6. Departments.
+7. Reports.
+8. Settings.
+
+Connect every page to the same local data layer.
+
+### Stage 8: Workflow integration
+
+Verify that creating a candidate, creating a job, creating an application, scheduling an interview, changing an application status, and hiring a candidate all update the relevant views.
+
+Test the relationship constraints.
+
+### Stage 9: Visual refinement
+
+Refine spacing, typography, border treatments, animations, empty states, loading states, responsive behaviour, and theme consistency.
+
+Do not introduce visual refinements that break the functional application.
+
+### Stage 10: Verification
+
+Run the application.
+
+Test important user flows.
+
+Run the production build.
+
+Fix implementation errors.
+
+Review console output and test results.
+
+Report any remaining limitations honestly.
+
+---
+
+# PART XXVIII. REQUIRED TEST SCENARIOS
+
+## 28. FUNCTIONAL ACCEPTANCE TESTS
+
+Test the following scenarios.
+
+### Scenario 1: Landing page
+
+- Open `/`.
+- Confirm the landing page renders.
+- Confirm the logo or fallback branding appears.
+- Confirm the title is correct.
+- Confirm the favicon is configured.
+- Click the primary CTA.
+- Verify that the intended route opens.
+- Click the secondary CTA.
+- Verify that the workflow section is reached.
+- Verify that the layout works on mobile.
+- Verify that reduced-motion preferences are respected.
+
+### Scenario 2: Demonstration login
+
+- Enter valid demonstration credentials.
+- Confirm access to the dashboard.
+- Sign out.
+- Confirm access is revoked from protected routes.
+- Enter invalid credentials.
+- Confirm an error is displayed.
+- Refresh the page and verify the intended local session behaviour.
+
+### Scenario 3: Candidate creation
+
+- Open the candidate directory.
+- Create a candidate with valid data.
+- Confirm that the candidate appears.
+- Search for the candidate.
+- Confirm that the candidate can be found.
+- Attempt to create a duplicate email.
+- Confirm that the operation is rejected.
+- Refresh the page.
+- Confirm persistence where local storage is enabled.
+
+### Scenario 4: Job creation
+
+- Create a job with a valid department.
+- Confirm that it appears in the directory.
+- Verify the department relationship.
+- Enter an invalid salary range.
+- Confirm validation.
+- Verify the dashboard reflects relevant changes.
+
+### Scenario 5: Application creation
+
+- Select an existing candidate.
+- Select an existing job.
+- Create an application.
+- Confirm that the application appears.
+- Attempt to create the same candidate/job combination again.
+- Confirm duplicate prevention.
+- Verify the candidate's application count.
+- Verify dashboard statistics.
+
+### Scenario 6: Status change and audit
+
+- Open an existing application.
+- Change its status to a different allowed value.
+- Confirm that the status updates.
+- Confirm that a local audit entry is created.
+- Confirm that the audit entry contains the previous and new status.
+- Verify that no duplicate audit entry is created for a no-op update.
+
+### Scenario 7: Interview scheduling
+
+- Schedule an interview for an existing application.
+- Confirm that it appears.
+- Attempt to create a duplicate round for the same application.
+- Confirm that the operation is rejected.
+- Enter an invalid score.
+- Confirm validation.
+- Update feedback and verify the displayed record.
+
+### Scenario 8: Employee creation
+
+- Open the employee directory.
+- Select a valid application and its associated candidate.
+- Enter a designation, joining date, and salary.
+- Create the employee.
+- Confirm that the employee appears.
+- Confirm that the candidate and application references are correct.
+- Confirm that dashboard statistics update.
+- Attempt to create a duplicate employee for the same application.
+- Confirm that the operation is rejected.
+
+### Scenario 9: Hiring workflow
+
+- Select an eligible application.
+- Open the hiring dialog.
+- Enter the required information.
+- Confirm hiring.
+- Verify that the application becomes `HIRED`.
+- Verify that exactly one employee record is created.
+- Verify that the audit entry is created.
+- Verify that the dashboard updates.
+- Attempt to hire the same application again.
+- Confirm that duplicate hiring is prevented.
+- Verify that failed operations do not leave inconsistent records.
+
+### Scenario 10: Employee editing
+
+- Open an employee record.
+- Change the designation.
+- Save the change.
+- Verify that the directory updates.
+- Change the employment status to `INACTIVE`.
+- Verify that the record remains present and its status changes.
+- Confirm that invalid relationships cannot be introduced.
+
+### Scenario 11: Search and filters
+
+- Search each major directory.
+- Apply multiple compatible filters.
+- Sort the results.
+- Clear one filter.
+- Confirm that the other filters remain intact.
+- Confirm that displayed counts match the filtered data.
+
+### Scenario 12: Theme switching
+
+- Switch to dark mode.
+- Inspect tables, dialogs, charts, forms, and navigation.
+- Switch back to light mode.
+- Refresh the page.
+- Verify theme persistence.
+- Confirm that no page remains stuck in the wrong theme.
+
+### Scenario 13: Local persistence and reset
+
+- Create several local records.
+- Refresh the page.
+- Confirm that the records persist.
+- Reset the demonstration dataset.
+- Confirm that the original data returns.
+- Confirm that newly created records are removed.
+- Confirm that all metrics and views update.
+
+### Scenario 14: Export
+
+- Apply a filter to a relevant table.
+- Export the displayed data to CSV.
+- Open the generated file.
+- Confirm that the headers and data are correct.
+- Confirm that the export does not include unrelated filtered-out rows if the export is intended to respect the current filter.
+
+### Scenario 15: Production build
+
+- Run the available production build.
+- Confirm that it completes successfully.
+- Resolve errors introduced by the implementation.
+- Verify that assets load.
+- Verify direct navigation to nested routes using the available preview or deployment environment.
+- Review console errors.
+
+Do not claim a scenario passed unless it was actually tested.
+
+If the environment prevents a test from being run, identify it as unverified.
+
+---
+
+# PART XXIX. FINAL DELIVERY REQUIREMENTS
+
+## 29. WHAT MUST BE DELIVERED
+
+Deliver the complete frontend project, not merely a description of the proposed implementation.
+
+The final application must contain:
+
+- Public landing page.
+- Demonstration login.
+- Dashboard.
+- Candidate management.
+- Job management.
+- Application management.
+- Interview management.
+- Employee management.
+- Department management.
+- Reports and analytics.
+- Settings.
+- Light and dark themes.
+- Facet-glass visual system.
+- Textured backgrounds.
+- Functional forms.
+- Search and filters.
+- Local data persistence.
+- Local audit simulation.
+- Hiring workflow.
+- Data reset.
+- CSV export where implemented.
+- Responsive layouts.
+- Accessibility and reduced-motion support.
+
+Every visible interactive control must have a meaningful action.
+
+Do not leave placeholder pages.
+
+Do not leave buttons that do nothing.
+
+Do not display fake successful operations.
+
+Do not implement a backend.
+
+Do not claim that Oracle has been connected.
+
+Do not claim that local data is being saved to a corporate database.
+
+## 29.1 Final implementation report
+
+After implementation, provide a concise but complete report covering:
+
+1. Overall application structure.
+2. Landing-page design.
+3. Main application modules.
+4. Data model and local persistence strategy.
+5. Demonstration login credentials.
+6. Files created or modified.
+7. Dependencies added or changed.
+8. How to run the application.
+9. Production build results.
+10. Functional tests actually performed.
+11. Tests that remain unverified.
+12. Any limitations or unresolved schema discrepancies.
+
+Clearly distinguish completed work from future possibilities.
+
+Do not claim a successful build if it was not run.
+
+Do not claim complete functionality if some required flows remain unfinished.
+
+---
+
+# FINAL CREATIVE AND ENGINEERING DIRECTIVE
+
+Create a product that feels designed, not generated.
+
+The landing page must deliver the visual impact of a sophisticated faceted-glass composition.
+
+The rest of the application must provide the clarity and reliability expected of an enterprise recruitment-management interface.
+
+Use warm beige surfaces, subtle texture, corporate blue accents, fine borders, carefully layered glass, and slow geometric background motion to establish a recognisable identity.
+
+Use a consistent local data model to make the recruitment workflows genuinely interactive.
+
+Treat the attached Oracle SQL*Plus project as the source of truth for the data relationships and allowed values.
+
+Treat the supplied MotionSites reference as inspiration for the design language.
+
+Treat the official Blue Star website as the source for authentic branding.
+
+Keep the application completely frontend-only.
+
+Preserve data integrity within the local demonstration model.
+
+Prioritise functional correctness, visual quality, accessibility, and maintainability equally.
+
+**Do not stop after building the hero. Do not replace functionality with mockups. Do not invent database fields. Do not silently change status values. Do not create invalid employee relationships. Do not simulate successful operations that did not occur. Do not claim tests passed unless they were executed.**
+
+Build the complete application, verify the important workflows, fix the errors you discover, and report the actual result.
