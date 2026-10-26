@@ -2,11 +2,10 @@ import { RecruitmentDatabaseState } from './schema';
 
 /**
  * Initial Demonstration Dataset derived directly from MiniProject Code.pdf (Pages 5-41).
- * Preserves all 7 departments, 7 jobs, 12 candidates (1001-1011 from INSERTs + 1012 from ER_ADD_CANDIDATE),
- * 12 applications (5001-5011 from INSERTs + 5012 from ER_APPLY_FOR_JOB),
- * the trigger audit trail on 5002 and 5012, the scheduled interview on 5012, and the hired employee on 5012.
- * Includes 2 clearly marked synthetic interview records (IDs 2 and 3) for applications 5003 and 5008
- * which have APPLICATION_STATUS = 'INTERVIEW' in the SQL file.
+ * Role assignments:
+ * - Karan Saini (karan.saini): HR
+ * - Existing employee account (diksha.rajwani): EMPLOYEE
+ * - Existing & newly registered applicants: CANDIDATE (automatically upgraded to EMPLOYEE when hired)
  */
 export function createInitialDatabaseState(): RecruitmentDatabaseState {
   return {
@@ -420,7 +419,7 @@ export function createInitialDatabaseState(): RecruitmentDatabaseState {
         category: 'HIRE',
         title: 'Candidate Hired via ER_HIRE_CANDIDATE',
         description:
-          'Application #5012 (Diksha Rajwani) marked HIRED and Employee #1 created with salary ₹6,00,000.',
+          'Application #5012 marked HIRED and Employee #1 created in local demonstration state.',
         sqlEquivalent: "EXEC ER_HIRE_CANDIDATE(5012, 'Software Developer', 600000);",
       },
       {
@@ -441,6 +440,76 @@ export function createInitialDatabaseState(): RecruitmentDatabaseState {
         description:
           'Application #5012 transitioned from APPLIED to SHORTLISTED (Audit #2 recorded).',
         sqlEquivalent: "EXEC ER_UPDATE_STATUS(5012, 'SHORTLISTED');",
+      },
+    ],
+    resumes: [],
+    accounts: [
+      {
+        username: 'karan.saini',
+        fullName: 'Karan Anil Saini',
+        role: 'HR',
+        candidateId: 1003,
+      },
+      {
+        username: 'diksha.rajwani',
+        fullName: 'Diksha Rajwani',
+        role: 'EMPLOYEE',
+        candidateId: 1012,
+        employeeId: 1,
+      },
+      {
+        username: 'yug.prajapati',
+        fullName: 'Yug Prajapati',
+        role: 'EMPLOYEE',
+        candidateId: 1006,
+      },
+      {
+        username: 'chahat.tekwani',
+        fullName: 'Chahat Tekwani',
+        role: 'CANDIDATE',
+        candidateId: 1002,
+      },
+      {
+        username: 'shravani.salunkhe',
+        fullName: 'Shravani Salunkhe',
+        role: 'CANDIDATE',
+        candidateId: 1004,
+      },
+      {
+        username: 'gauri.sardal',
+        fullName: 'Gauri Sardal',
+        role: 'CANDIDATE',
+        candidateId: 1005,
+      },
+      {
+        username: 'jatin.rawlani',
+        fullName: 'Jatin Rawlani',
+        role: 'CANDIDATE',
+        candidateId: 1007,
+      },
+      {
+        username: 'soumya.ramani',
+        fullName: 'Soumya Ramani',
+        role: 'CANDIDATE',
+        candidateId: 1008,
+      },
+      {
+        username: 'aarya.sanwre',
+        fullName: 'Aarya Sanwre',
+        role: 'CANDIDATE',
+        candidateId: 1009,
+      },
+      {
+        username: 'kshitij.sachan',
+        fullName: 'Kshitij Sachan',
+        role: 'CANDIDATE',
+        candidateId: 1010,
+      },
+      {
+        username: 'sahil.varlani',
+        fullName: 'Sahil Varlani',
+        role: 'CANDIDATE',
+        candidateId: 1011,
       },
     ],
   };

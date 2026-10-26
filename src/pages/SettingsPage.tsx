@@ -11,7 +11,7 @@ import {
   User,
 } from 'lucide-react';
 import { Modal } from '../components/ui';
-import { DEMO_CREDENTIALS, useRecruitment } from '../context/RecruitmentContext';
+import { useRecruitment } from '../context/RecruitmentContext';
 
 interface SettingsPageProps {
   onNavigate: (path: string) => void;
@@ -22,7 +22,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
     db,
     theme,
     setTheme,
-    demoUser,
+    currentUser,
     logout,
     resetDemoData,
   } = useRecruitment();
@@ -119,14 +119,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
               live Oracle SQL*Plus database server.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsResetModalOpen(true)}
-            className="btn-base btn-destructive text-xs"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>Reset Demo Data</span>
-          </button>
+          {currentUser?.role === 'HR' && (
+            <button
+              type="button"
+              onClick={() => setIsResetModalOpen(true)}
+              className="btn-base btn-destructive text-xs"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>Reset Demo Data</span>
+            </button>
+          )}
         </div>
 
         <div className="surface-inset rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-xs">
@@ -178,14 +180,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
             </div>
             <div>
               <h2 className="text-base font-display font-semibold text-[var(--text-primary)]">
-                Demonstration Session Account
+                Active Demonstration Session
               </h2>
               <p className="text-xs text-[var(--text-secondary)]">
-                Active User:{' '}
-                <code className="font-mono-tabular font-semibold text-[var(--text-primary)]">
-                  {demoUser?.username ?? DEMO_CREDENTIALS.username}
-                </code>{' '}
-                · {DEMO_CREDENTIALS.role}
+                Signed in as:{' '}
+                <strong className="text-[var(--text-primary)]">
+                  {currentUser?.displayName ?? 'Demonstration User'}
+                </strong>{' '}
+                · Role: <strong className="text-[var(--brand-primary)]">{currentUser?.role ?? 'HR'}</strong>
               </p>
             </div>
           </div>
@@ -244,33 +246,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
             </p>
           </div>
         </div>
-
-        <div className="surface-inset rounded-xl p-4 space-y-1.5">
-          <div className="font-semibold text-[var(--text-primary)]">
-            Documented SQL Script Observations (MiniProject Code.pdf)
-          </div>
-          <ul className="list-disc list-inside text-[var(--text-secondary)] space-y-1 leading-relaxed">
-            <li>
-              <strong>Interview Round Data Type (Pages 25 vs 30):</strong> On Page 25,{' '}
-              <code className="font-mono-tabular">ER_SCHEDULE_INTERVIEW</code> initially declared{' '}
-              <code className="font-mono-tabular">P_INTERVIEW_ROUND IN VARCHAR2</code> and passed{' '}
-              <code className="font-mono-tabular">&apos;Technical Round&apos;</code> into the
-              numeric <code className="font-mono-tabular">INTERVIEW_ROUND NUMBER</code> column, then
-              corrected the parameter to <code className="font-mono-tabular">NUMBER</code> on Page
-              30 with value <code className="font-mono-tabular">1</code>. This frontend strictly
-              stores numeric <code className="font-mono-tabular">INTERVIEW_ROUND</code> values.
-            </li>
-            <li>
-              <strong>Initial Hired Status on Application #5006 (Page 9 vs Page 34):</strong>{' '}
-              Application #5006 (Candidate #1006, Yug Prajapati) was inserted with{' '}
-              <code className="font-mono-tabular">APPLICATION_STATUS = &apos;HIRED&apos;</code>{' '}
-              prior to defining <code className="font-mono-tabular">ER_HIRE_CANDIDATE</code>, while
-              Application #5012 was hired via{' '}
-              <code className="font-mono-tabular">EXEC ER_HIRE_CANDIDATE(5012, ...)</code> creating
-              Employee #1. Both records are preserved accurately.
-            </li>
-          </ul>
-        </div>
       </section>
 
       {/* Reset Demo Data Confirmation Dialog (Part XII.12.2) */}
@@ -286,9 +261,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
             <div className="space-y-1">
               <div className="font-semibold">Confirm Local State Reset</div>
               <p className="leading-relaxed">
-                All candidates, jobs, applications, interviews, employees, departments, and audit
-                entries created or modified during this browser demonstration will be discarded and
-                restored to the initial SQL baseline.
+                All candidates, jobs, applications, interviews, employees, departments, resumes, and
+                audit entries created or modified during this browser demonstration will be
+                discarded and restored to the initial SQL baseline.
               </p>
             </div>
           </div>

@@ -205,7 +205,7 @@ export function downloadCsvFile(
  */
 export function formatInrSalary(amount: number | null | undefined): string {
   if (amount === null || amount === undefined) return '—';
-  return `₹${Number(amount).toLocaleString('en-IN')}`;
+  return `INR ${Number(amount).toLocaleString('en-IN')}`;
 }
 
 /**

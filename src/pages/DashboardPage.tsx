@@ -1,15 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import {
   ArrowRight,
-  Briefcase,
-  Building2,
-  CalendarCheck,
-  Clock,
+  ClipboardCheck,
   FileText,
   Filter,
   Plus,
   UserCheck,
-  Users,
 } from 'lucide-react';
 import { StatusIndicator } from '../components/ui';
 import { useRecruitment } from '../context/RecruitmentContext';
@@ -22,6 +18,7 @@ interface DashboardPageProps {
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const {
     db,
+    currentUser,
     metrics,
     candidateApplicationView,
     interviewDetailsView,
@@ -96,14 +93,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   return (
     <div className="space-y-6">
-      {/* Contextual Quick Actions Bar */}
-      <div className="facet-glass rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-0.5">
+      {/* HR Welcome & Contextual Actions Header */}
+      <div className="facet-glass rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-1">
           <div className="text-xs font-mono-tabular uppercase tracking-wider text-[var(--brand-primary)] font-semibold">
-            Oracle SQL*Plus Demonstration State (Layer B)
+            HR Administration Workspace · {currentUser?.displayName ?? 'Karan Saini'}
           </div>
-          <p className="text-xs text-[var(--text-secondary)]">
-            All metrics and charts below calculate live from normalized browser records.
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
+            Manage candidate submissions, review PDF resumes, transition application statuses, and
+            update employee profiles.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
@@ -117,6 +115,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </button>
           <button
             type="button"
+            onClick={() => onNavigate('/resume-review')}
+            className="btn-base btn-secondary text-xs"
+          >
+            <ClipboardCheck className="w-3.5 h-3.5 text-[var(--brand-primary)]" />
+            <span>Review Resumes ({metrics.applicationsAwaitingReview})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate('/employees')}
+            className="btn-base btn-secondary text-xs"
+          >
+            <UserCheck className="w-3.5 h-3.5 text-[var(--brand-primary)]" />
+            <span>Employee Directory</span>
+          </button>
+          <button
+            type="button"
             onClick={() => onNavigate('/applications')}
             className="btn-base btn-primary text-xs"
           >
@@ -126,84 +140,74 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* 7 Required Summary Metrics Cards (Part X.10.1) */}
-      <section aria-label="Recruitment summary metrics" className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3.5">
+      {/* Unified Summary Metrics Strip (Structured Dividers Instead of Repetitive Flashcards) */}
+      <section
+        aria-label="Recruitment summary metrics"
+        className="surface-card rounded-xl divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-subtle)] grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 overflow-hidden"
+      >
         {[
           {
             label: 'Total Candidates',
             value: metrics.totalCandidates,
             sub: 'ER_CANDIDATE',
             path: '/candidates',
-            icon: Users,
           },
           {
-            label: 'Total Applications',
+            label: 'Applications Received',
             value: metrics.totalApplications,
             sub: 'ER_APPLICATION',
             path: '/applications',
-            icon: FileText,
+          },
+          {
+            label: 'Awaiting Review',
+            value: metrics.applicationsAwaitingReview,
+            sub: 'RESUME QUEUE',
+            path: '/resume-review',
           },
           {
             label: 'Open Jobs',
             value: metrics.openJobs,
             sub: 'STATUS: OPEN',
             path: '/jobs',
-            icon: Briefcase,
           },
           {
             label: 'Open Vacancies',
             value: metrics.openVacancies,
             sub: 'SUM(VACANCIES)',
             path: '/jobs',
-            icon: Building2,
           },
           {
             label: 'Interviews Scheduled',
             value: metrics.interviewsScheduled,
-            sub: 'SCHEDULED',
+            sub: 'ER_INTERVIEW',
             path: '/interviews',
-            icon: CalendarCheck,
           },
           {
             label: 'Total Employees',
             value: metrics.totalEmployees,
             sub: 'ER_EMPLOYEE',
             path: '/employees',
-            icon: UserCheck,
           },
-          {
-            label: 'Awaiting Review',
-            value: metrics.applicationsAwaitingReview,
-            sub: 'PENDING REVIEW',
-            path: '/applications',
-            icon: Clock,
-          },
-        ].map((card) => {
-          const Icon = card.icon;
-          return (
-            <button
-              key={card.label}
-              type="button"
-              onClick={() => onNavigate(card.path)}
-              className="surface-card rounded-xl p-4 text-left hover:border-[var(--brand-primary)] transition-colors flex flex-col justify-between cursor-pointer group"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]">
-                  {card.label}
-                </span>
-                <Icon className="w-4 h-4 text-[var(--brand-primary)] shrink-0" />
+        ].map((metric) => (
+          <button
+            key={metric.label}
+            type="button"
+            onClick={() => onNavigate(metric.path)}
+            className="p-4 text-left hover:bg-[var(--surface-secondary)]/50 transition-colors cursor-pointer flex flex-col justify-between group"
+          >
+            <span className="text-xs font-medium text-[var(--text-secondary)] group-hover:text-[var(--brand-primary)]">
+              {metric.label}
+            </span>
+            <div className="mt-2">
+              <div className="text-2xl font-display font-bold font-mono-tabular text-[var(--text-primary)]">
+                {metric.value}
               </div>
-              <div className="mt-3">
-                <div className="text-2xl font-display font-bold font-mono-tabular text-[var(--text-primary)]">
-                  {card.value}
-                </div>
-                <div className="text-[11px] font-mono-tabular text-[var(--text-secondary)] mt-0.5 truncate">
-                  {card.sub}
-                </div>
+              <div className="text-[11px] font-mono-tabular text-[var(--text-secondary)] mt-0.5 truncate">
+                {metric.sub}
               </div>
-            </button>
-          );
-        })}
+            </div>
+          </button>
+        ))}
       </section>
 
       {/* Dashboard Filter Bar (Part X.10.5) */}
@@ -323,10 +327,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             </div>
             <button
               type="button"
-              onClick={() => onNavigate('/applications')}
-              className="text-xs font-semibold text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1"
+              onClick={() => onNavigate('/resume-review')}
+              className="text-xs font-semibold text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1 cursor-pointer"
             >
-              <span>All Applications</span>
+              <span>Open Resume Review</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -359,7 +363,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-display font-semibold text-[var(--text-primary)]">
-                Open Vacancies by Department
+                Open Vacancies & Employees by Department
               </h2>
               <p className="text-xs text-[var(--text-secondary)]">
                 LEFT JOIN ER_JOB WHERE JOB_STATUS = &apos;OPEN&apos;
@@ -368,7 +372,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <button
               type="button"
               onClick={() => onNavigate('/departments')}
-              className="text-xs font-semibold text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1"
+              className="text-xs font-semibold text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1 cursor-pointer"
             >
               <span>Departments</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -422,7 +426,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               <button
                 type="button"
                 onClick={() => onNavigate('/interviews')}
-                className="text-xs font-semibold text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1"
+                className="text-xs font-semibold text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1 cursor-pointer"
               >
                 <span>Manage Interviews</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -493,7 +497,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <button
               type="button"
               onClick={() => onNavigate('/employees')}
-              className="text-[var(--brand-primary)] font-semibold hover:underline"
+              className="text-[var(--brand-primary)] font-semibold hover:underline cursor-pointer"
             >
               Open Employee Directory
             </button>
@@ -549,14 +553,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               application records
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('/applications')}
-            className="btn-base btn-secondary text-xs"
-          >
-            <span>Open Full Applications Directory</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onNavigate('/resume-review')}
+              className="btn-base btn-secondary text-xs"
+            >
+              <span>Review Resumes</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('/applications')}
+              className="btn-base btn-secondary text-xs"
+            >
+              <span>Full Applications Directory</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         {filteredApps.length === 0 ? (

@@ -1,0 +1,2145 @@
+MASTER PROMPT: UPGRADE THE EXISTING BLUE STAR EMPLOYEE RECRUITMENT SYSTEM WITHOUT BREAKING THE CURRENT PROTOTYPE
+
+1. PRIMARY OBJECTIVE AND NON-NEGOTIABLE INSTRUCTIONS
+
+You are working on an existing frontend prototype for the Blue Star Employee Recruitment System.
+
+Your task is to improve, extend, and refine the current project into a polished, modern, interactive recruitment management platform. Use the existing deployed website, https://veridexbynodenerds.netlify.app/, as a functional reference for the kind of experience and workflow I want to achieve. Do not copy its visual theme. The Blue Star project must retain its own branding, visual identity, and design direction.
+
+The existing project is the source of truth for its current functionality, architecture, and implemented features.
+
+ABSOLUTE RULE: DO NOT REBUILD THE PROJECT FROM SCRATCH
+
+Before making any changes, inspect the entire existing codebase and understand how the application currently works.
+
+Identify:
+
+* The current framework and project structure.
+* The main entry point and routing system.
+* All existing pages and components.
+* The current login and authentication simulation.
+* The existing dashboards and workspaces.
+* The current navigation and sidebar behavior.
+* The current theme implementation, if any.
+* Existing local state management.
+* Existing forms, tables, search functionality, filters, buttons, and modals.
+* Existing candidate, employee, HR, and recruitment workflows.
+* Existing mock data and how it is stored.
+* Existing responsive design behavior.
+* Current dependencies and available libraries.
+* Any existing file upload, notification, or chatbot functionality.
+
+Read the relevant files before editing them. Do not assume that a feature is missing simply because it is not immediately visible.
+
+Create an internal understanding of the existing application’s structure and determine which components can be reused, which need to be modified, and which genuinely need to be added.
+
+Preserve every existing working feature unless a requirement in this prompt explicitly asks you to modify or remove it.
+
+Do not:
+
+* Replace the existing application with a new starter template.
+* Delete working components simply because you prefer another implementation.
+* Rewrite the entire application when targeted changes would work.
+* Change existing login flows unnecessarily.
+* Remove current functionality while improving the appearance.
+* Change existing data structures without understanding their purpose.
+* Replace functional controls with decorative elements.
+* introduce unnecessary libraries or dependencies.
+* Create duplicate pages or duplicate components for the same functionality.
+* Remove features because they are inconvenient to integrate.
+* Introduce unnecessary sample records to make a dashboard appear full.
+* change working routes without providing an appropriate replacement.
+* silently introduce breaking changes to existing functionality.
+
+If an existing feature already satisfies a requirement, reuse it and improve it only where necessary.
+
+If a requested feature conflicts with an existing feature, inspect the implementation, preserve the underlying functionality wherever possible, and make the smallest appropriate change.
+
+REQUIRED WORKING APPROACH
+
+Follow this sequence:
+
+1. Inspect the current project.
+2. Identify its architecture and working functionality.
+3. Map the requested changes to the existing files and components.
+4. Determine which features can be reused.
+5. Implement the changes incrementally.
+6. Verify the existing features still work.
+7. Verify the new features work.
+8. Fix any errors introduced by the changes.
+9. Provide a concise summary of the modifications and any remaining limitations.
+
+Do not stop after producing a plan if you have the tools and access required to edit the project. Carry out the implementation.
+
+If an essential requirement cannot be completed because of a missing dependency, unavailable file, or architectural limitation, explain the specific limitation rather than silently omitting the feature.
+
+⸻
+
+2. PROJECT IDENTITY AND BRANDING
+
+The application name must be:
+
+Blue Star Employee Recruitment System
+
+Use this exact browser tab title:
+
+Blue Star’s - Employee Recruitment System
+
+Update the document title in the appropriate application entry point so that it appears correctly in the browser tab across all routes.
+
+Do not leave the old title, an automatically generated framework title, or an unrelated project name in the browser tab.
+
+Official branding
+
+Use Blue Star’s official website as the primary reference for its corporate identity:
+
+https://www.bluestarindia.com/
+
+Use the official Blue Star logo or a verified official logo asset where technically possible.
+
+Do not:
+
+* Invent a new logo and present it as the official Blue Star logo.
+* Distort the logo.
+* Change its proportions.
+* Use an unrelated company’s logo.
+* Substitute an arbitrary blue icon for the official logo when the actual asset is available.
+
+If an appropriate official logo asset cannot be accessed, preserve a clean placeholder or existing logo treatment rather than fabricating a misleading official mark.
+
+Set the favicon to the appropriate official Blue Star logo asset if it is available and suitable for favicon use.
+
+Verify that the favicon actually changes in the browser tab. Changing only the on-screen logo is not sufficient.
+
+The application may use Blue Star branding as requested, but do not claim that this student prototype is an officially operated Blue Star corporate system.
+
+A small, unobtrusive footer note may identify it as a prototype where appropriate.
+
+⸻
+
+3. VISUAL DESIGN DIRECTION
+
+3.1 Overall design philosophy
+
+Create a premium, polished, contemporary recruitment management application.
+
+The interface should feel thoughtfully designed, professional, calm, responsive, and visually engaging.
+
+Avoid a generic AI-generated dashboard appearance.
+
+The design must not look like a collection of default templates, oversized cards, or repetitive rectangular panels.
+
+Use clear visual hierarchy, deliberate spacing, refined typography, tasteful animations, consistent interaction patterns, and strong information architecture.
+
+The system should look suitable for a professional corporate environment while remaining modern enough to feel distinctive.
+
+Primary visual inspiration
+
+Use this design reference for inspiration:
+
+https://motionsites.ai/?prompt=facet-glass-hero
+
+Study the visual principles of the facet-glass hero style and adapt them to this application.
+
+Use the inspiration for:
+
+* Refined glass-inspired surfaces.
+* Faceted shapes and dimensional depth.
+* Carefully layered backgrounds.
+* Subtle light refraction effects.
+* Smooth transitions.
+* Tactile button interactions.
+* Elegant motion.
+* Clean, intentional composition.
+
+Do not reproduce the reference website as a complete copy.
+
+Do not allow the design inspiration to override the application’s usability or corporate identity.
+
+3.2 Colour palette
+
+Use Blue Star’s corporate blue as the primary accent colour.
+
+Build the light theme around:
+
+* Warm ivory.
+* Soft beige.
+* Muted neutral surfaces.
+* Restrained corporate blue.
+* Dark charcoal text.
+* Subtle borders.
+* Carefully selected complementary neutral colours.
+
+The application must not be completely white.
+
+Avoid an overwhelmingly white interface, but also avoid making every component blue.
+
+Use the primary blue selectively for:
+
+* Primary actions.
+* Active navigation items.
+* Selected controls.
+* Links.
+* Progress indicators.
+* Important status indicators.
+* Focus states.
+* Small decorative details.
+
+Use complementary colours for status indicators where appropriate, with labels or icons so that status is not communicated by colour alone.
+
+Avoid excessive gradients.
+
+Do not turn every background, button, heading, and card into a blue gradient.
+
+The design should rely primarily on sophisticated solid colours, layered surfaces, subtle shadows, restrained highlights, and texture.
+
+3.3 Typography
+
+Use Times New Roman throughout the entire application, including:
+
+* Landing page.
+* Login and registration pages.
+* HR dashboard.
+* Employee dashboard.
+* Candidate dashboard.
+* Forms.
+* Tables.
+* Buttons.
+* Navigation.
+* Sidebar.
+* Search fields.
+* Dropdowns.
+* Chatbot.
+* Notifications.
+* Modals.
+* Settings.
+* Privacy policy.
+* About Us.
+* Contact Us.
+* FAQs.
+* Footer.
+* Empty states.
+* Error messages.
+* Loading states.
+
+Exceptions:
+
+* The official Blue Star logo must retain its original appearance.
+* Existing or newly created logos may use their own appropriate brand typography.
+* Headings may use a different typeface if it meaningfully improves the design.
+
+Keep the heading typeface restrained and professional. Do not introduce several different fonts.
+
+Use Times New Roman as the default body typeface and make sure it applies consistently to dynamically rendered components as well.
+
+Set a sensible global typography rule in the main stylesheet and override it only where justified.
+
+Use readable font sizes, appropriate line heights, and consistent font weights.
+
+Do not sacrifice readability for decorative styling.
+
+⸻
+
+4. ANIMATED BACKGROUND AND MOTION DESIGN
+
+I want the background design to be animated and visibly in motion.
+
+The animation must work throughout the application, not only on the landing page.
+
+Background requirements
+
+Create a refined, continuously animated background using subtle visual elements such as:
+
+* Slowly moving geometric facets.
+* Softly shifting abstract shapes.
+* Subtle layered textures.
+* Gradually moving light reflections.
+* Slowly rotating or drifting decorative forms.
+* Gentle depth changes between background layers.
+
+The background should feel dynamic without distracting the user.
+
+Use Blue Star’s colour palette and the facet-glass visual inspiration.
+
+In light mode, the animation should complement the ivory and beige background.
+
+In dark mode, it should adapt to a darker neutral palette with restrained blue highlights.
+
+The background must remain behind all functional content.
+
+Do not allow decorative shapes, texture, or animation to cover:
+
+* Text.
+* Form fields.
+* Buttons.
+* Navigation.
+* Tables.
+* Uploaded document information.
+* Profile details.
+* Important status messages.
+* Chatbot controls.
+
+Maintain sufficient contrast in every section.
+
+Motion performance
+
+Animations must be lightweight and responsive.
+
+Prefer CSS animations and transforms where possible.
+
+Avoid continuously triggering expensive layout calculations.
+
+Do not introduce unnecessary animation libraries if the project can achieve the result with its existing stack.
+
+Respect the user’s reduced-motion preference. When reduced motion is enabled, substantially reduce or disable nonessential animations.
+
+Use slower, more deliberate entrance animations rather than fast, flashy effects.
+
+Use motion to establish hierarchy and improve feedback, not to animate every element independently.
+
+Do not make the interface feel like a gaming website.
+
+⸻
+
+5. GLASSMORPHISM AND INTERACTION DESIGN
+
+Use an iOS 26-inspired liquid-glass visual direction as inspiration for selected interactive elements.
+
+This is a visual reference, not an instruction to copy an operating system interface.
+
+Apply glass-inspired styling selectively to:
+
+* Primary buttons.
+* Selected navigation controls.
+* Certain floating controls.
+* The chatbot launcher.
+* Appropriate modal surfaces.
+* Small areas where dimensional depth genuinely improves the experience.
+
+Buttons should have a clearly defined border, polished surface, subtle highlights, and an appropriate hover or pressed state.
+
+Use a combination of:
+
+* Refined borders.
+* Subtle inner highlights.
+* Soft shadows.
+* Carefully controlled transparency.
+* Small changes in brightness.
+* Gentle scaling or movement.
+* Smooth transitions.
+
+Avoid applying heavy blur to every component.
+
+Avoid making all cards transparent.
+
+Do not make buttons look indistinguishable from the background.
+
+Every interactive element must have a visible boundary or another clear indication that it can be used.
+
+Button interaction requirements
+
+Every button must have:
+
+* A default state.
+* A hover state.
+* A pressed state.
+* A focus-visible state.
+* A disabled state when appropriate.
+
+When the user hovers over a navigation option, visibly change its colour.
+
+Use a tasteful transition that makes the change immediately understandable.
+
+The hover colour should complement the Blue Star colour palette and maintain sufficient contrast.
+
+Do not rely solely on animation to communicate that a button has been activated.
+
+Use consistent transitions across the entire application.
+
+⸻
+
+6. LIGHT MODE AND DARK MODE THROUGHOUT THE APPLICATION
+
+Implement a complete light mode and dark mode system.
+
+The theme toggle must not be restricted to the landing page.
+
+Both themes must work across every route, workspace, form, modal, table, and interactive component.
+
+This includes:
+
+* Public landing page.
+* Login.
+* Registration.
+* Forgot-password interface, if present.
+* HR dashboard.
+* Employee dashboard.
+* Candidate dashboard.
+* Recruitment management.
+* Employee directory.
+* Candidate directory.
+* Job listings.
+* Application tracking.
+* Resume review.
+* Chatbot.
+* About Us.
+* Contact Us.
+* FAQs.
+* Privacy policy.
+* Settings.
+* Notifications.
+* Dropdowns.
+* Search results.
+* Empty states.
+* Error messages.
+* File upload interfaces.
+
+Light mode
+
+Use the warm ivory and beige palette with Blue Star blue as a restrained accent.
+
+Maintain dark, readable text.
+
+Dark mode
+
+Use a sophisticated dark charcoal or similarly suitable neutral background.
+
+Use lighter text and restrained blue highlights.
+
+Do not simply invert every colour mechanically.
+
+Adapt borders, shadows, tables, backgrounds, icons, buttons, and text for the dark theme.
+
+Theme persistence
+
+The user’s theme preference should persist while navigating between pages.
+
+Where appropriate, store the selected theme in local storage so it remains selected after refreshing the prototype.
+
+Use the operating system’s theme preference as the initial default if no saved preference exists.
+
+Provide a clearly visible theme toggle in the main application shell.
+
+On the public landing page, the toggle must also be accessible.
+
+When a user enters a workspace, the selected theme must remain unchanged.
+
+Avoid flashing the wrong theme before the saved preference loads.
+
+⸻
+
+7. REDESIGN THE PUBLIC LANDING PAGE
+
+Rework the landing page into a polished, informative, functional entry point for the recruitment platform.
+
+The landing page must communicate what the platform does without revealing private information.
+
+Absolutely no confidential information on the landing page
+
+Do not display:
+
+* Candidate names from the internal database.
+* Employee names.
+* Personal email addresses.
+* Phone numbers.
+* Resume details.
+* Application records.
+* Employee salary details.
+* Internal HR records.
+* Private profile information.
+* Login credentials.
+* Passwords.
+* Personal documents.
+* Private recruitment notes.
+* Internal dashboard screenshots containing sensitive information.
+* Real-looking private records copied from the existing prototype.
+
+Use generic, non-sensitive descriptions and abstract visual elements.
+
+If statistics are needed, use clearly identified illustrative statistics or neutral feature descriptions. Do not invent real company recruitment statistics and present them as factual.
+
+Prefer explaining capabilities over displaying numerical claims.
+
+Landing page structure
+
+Create a carefully designed landing page with the following sections.
+
+A. Navigation bar
+
+Include:
+
+* Official Blue Star logo.
+* Platform.
+* About Us.
+* Contact Us.
+* FAQs.
+* Sign In.
+* A visible light/dark theme toggle.
+
+All options must be functional.
+
+Use an elegant navigation bar that works on desktop, tablet, and mobile.
+
+Navigation items must have clear hover states.
+
+Avoid overcrowding the navigation.
+
+B. Hero section
+
+Create a visually engaging hero section inspired by the facet-glass design reference.
+
+Use:
+
+* A strong headline.
+* A short and informative description.
+* A primary call-to-action.
+* A secondary call-to-action.
+* A subtle animated background.
+* Refined dimensional visual elements.
+
+The hero should communicate that the platform brings recruitment activities, candidate applications, employee information, and HR workflows together in one organized interface.
+
+Do not fill the hero with unnecessary text.
+
+Do not use personal information in the hero.
+
+The primary call-to-action should lead to the appropriate sign-in or access-selection interface.
+
+The secondary call-to-action should navigate to the platform overview or relevant explanatory section.
+
+Do not make these buttons decorative.
+
+C. Platform overview
+
+Explain the main platform capabilities through a layout that does not resemble a collection of flashcards.
+
+Do not use repetitive, equally sized cards for every feature.
+
+Instead, use a more interesting composition, such as:
+
+* A split-screen editorial layout.
+* A horizontal feature timeline.
+* Alternating text and illustration sections.
+* A structured feature grid with varied proportions.
+* A central product overview with supporting feature sections.
+* A clean, asymmetrical layout.
+
+Choose the layout that best fits the existing codebase and the overall design.
+
+Cover:
+
+* Recruitment and application management.
+* Candidate registration.
+* Resume submission.
+* HR review workflows.
+* Employee directory and profiles.
+* Application status tracking.
+* Recruitment-related communication.
+* Role-specific workspaces.
+
+Only describe functionality that exists or is being implemented in this prototype.
+
+D. How the platform works
+
+Explain the broad workflow:
+
+1. A candidate creates a profile.
+2. The candidate submits the required details and resume.
+3. HR reviews the submitted information.
+4. The application is updated according to the review workflow.
+5. HR can manage relevant employee information through the HR workspace.
+6. Employees can access their own workspace and permitted information.
+
+Clearly distinguish the prototype’s simulated functionality from any real backend integration.
+
+E. About Us
+
+Provide a meaningful About Us section.
+
+Explain the purpose of the Blue Star Employee Recruitment System as a recruitment management prototype designed to organize the application process and improve the experience for candidates, HR, and employees.
+
+Do not invent corporate claims, partnerships, official endorsements, or organizational facts.
+
+If the section refers to Blue Star as a company, use only verified information or neutral language.
+
+Do not falsely claim that the application is an officially authorized internal Blue Star system.
+
+F. Contact Us
+
+Create a complete and useful Contact Us section.
+
+Include:
+
+* A short introduction.
+* A contact form with name, email, subject, and message fields.
+* Required-field validation.
+* Email-format validation.
+* A clear submit button.
+* Success and error feedback.
+
+Since this is a frontend prototype, submission can be simulated locally.
+
+Do not claim that an email has actually been sent unless an email service is connected.
+
+Do not invent a real support email address or phone number.
+
+Clearly communicate when a submission has only been simulated.
+
+G. FAQs
+
+Create a useful FAQ section. Do not leave it empty.
+
+Include questions covering:
+
+* How candidates register.
+* How candidates submit their resumes.
+* What happens after a resume is submitted.
+* How candidates check their application status.
+* How HR reviews candidate submissions.
+* How employees access their workspace.
+* How users navigate between the public site and their workspace.
+* Whether information is connected to the Oracle database.
+* Whether uploaded resumes are sent to a real HR server.
+* How to switch between light and dark mode.
+* What the user should do if they cannot sign in.
+* Which features are currently simulated.
+
+Use an accessible accordion or another suitable expandable layout.
+
+Make each question interactive.
+
+Ensure that expanding one answer does not break the layout.
+
+H. Footer
+
+Include:
+
+* Blue Star Employee Recruitment System.
+* Platform navigation.
+* About Us.
+* Contact Us.
+* FAQs.
+* Privacy Policy.
+* Theme-aware styling.
+* A short prototype disclaimer where appropriate.
+
+Every link must lead to a real destination.
+
+⸻
+
+8. NAVIGATION MUST LEAD TO REAL DESTINATIONS
+
+The landing page currently contains navigation options such as Overview and other platform-related items.
+
+Rework these controls so they lead to the appropriate pages, sections, or workspaces.
+
+Do not leave navigation options that merely look functional.
+
+Do not show long explanations of internal workspaces on the public landing page when the user should be directed to the actual workspace.
+
+Keep the landing page focused on introducing the platform and directing users to the appropriate destination.
+
+Navigation behavior
+
+* Platform should lead to the platform overview.
+* About Us should lead to the About Us page or section.
+* Contact Us should lead to the Contact Us page or section.
+* FAQs should lead to the FAQ page or section.
+* Sign In should open the sign-in interface.
+* Workspace access should route the user to the appropriate workspace after the applicable role check.
+* Privacy Policy should open the actual privacy policy page.
+* Dashboard links should open the relevant dashboard.
+* Back and breadcrumb controls should work wherever they are present.
+
+If the existing application uses routing, reuse the existing routing system.
+
+If the application uses a single-page structure, implement navigation in a way that fits its current architecture.
+
+Do not introduce unnecessary full-page reloads.
+
+Ensure browser back and forward navigation works appropriately.
+
+Hover states
+
+All navigation options must have visible hover states.
+
+Use the chosen Blue Star accent colours and a refined transition.
+
+Maintain adequate contrast in both light and dark modes.
+
+⸻
+
+9. REWORK THE PRIVACY POLICY PAGE
+
+Rebuild the Privacy Policy page so it is a complete, readable, and genuinely useful page rather than an empty placeholder.
+
+Use a clean editorial layout rather than flashcard-style components.
+
+Include sections covering:
+
+* Purpose of the recruitment system.
+* Information candidates may enter.
+* Resume and document submission.
+* Employee profile information.
+* How information is displayed within the prototype.
+* Role-based access intentions.
+* Local demo data.
+* Local storage and browser limitations.
+* The distinction between simulated and real data processing.
+* Data retention limitations.
+* Security limitations of a frontend-only application.
+* Contact or feedback options.
+* Prototype status and limitations.
+
+Privacy accuracy requirements
+
+Do not claim that data is securely stored on a server if no backend exists.
+
+Do not claim that resumes are transmitted to HR automatically if the application only stores them locally.
+
+Do not claim that real authentication, encryption, access control, or server-side authorization exists unless it is genuinely implemented.
+
+Clearly explain that this version is a frontend prototype and that information entered into it may remain in browser state or local storage, depending on the implementation.
+
+If the prototype supports local file previews, explain that this does not mean a document has been uploaded to a secure server.
+
+Do not invent a legal company address, privacy officer, legal registration number, or contact email.
+
+Do not present the page as a legal guarantee of compliance.
+
+Make the page accessible from the landing page and the application footer.
+
+Provide a clear back-to-platform or return-to-home action.
+
+Use the same site-wide light and dark mode system.
+
+⸻
+
+10. CREATE FOUR DISTINCT USER-FACING INTERFACES
+
+The application should support four distinct experiences:
+
+1. Public visitor interface.
+2. HR interface.
+3. Employee interface.
+4. Candidate or job applicant interface.
+
+These must be separate experiences with relevant navigation, permissions, and content.
+
+Do not simply show the same dashboard to every role and change the heading.
+
+Each interface must have its own meaningful workflow.
+
+10.1 Public visitor interface
+
+The public interface should contain:
+
+* Landing page.
+* Platform overview.
+* About Us.
+* Contact Us.
+* FAQs.
+* Privacy Policy.
+* Sign-in entry point.
+* Candidate registration entry point.
+
+Do not expose private HR or employee records to visitors.
+
+Do not reveal internal information in navigation previews or public statistics.
+
+10.2 HR interface
+
+The HR interface is the primary recruitment administration workspace.
+
+It should provide access to the relevant recruitment and employee management functionality.
+
+Include the features described in the following sections, while reusing existing components whenever possible.
+
+10.3 Employee interface
+
+The employee interface should allow an authenticated employee to:
+
+* View their own profile.
+* View permitted personal employment information.
+* Edit appropriate profile fields where supported by the prototype.
+* View relevant announcements or notifications if implemented.
+* Navigate the workspace.
+* Access account preferences.
+* Switch between light and dark mode.
+* Use the chatbot for relevant assistance.
+
+Employees must not automatically gain access to every other employee’s private information.
+
+Do not give employees HR-level permissions.
+
+10.4 Candidate interface
+
+The candidate interface should support:
+
+* New candidate registration.
+* Profile creation.
+* Resume submission.
+* Application overview.
+* Application status.
+* Profile review.
+* Resume replacement or resubmission where appropriate.
+* Relevant notifications.
+* Help through the chatbot.
+* Theme preferences.
+
+A candidate should not be able to see another candidate’s profile, resume, application, or personal information.
+
+Do not treat a candidate as an employee merely because they have registered.
+
+A candidate should become an employee in the prototype only through the appropriate HR hiring workflow.
+
+⸻
+
+11. LOGIN AND ACCOUNT CREATION
+
+Build on the existing login interface and authentication simulation.
+
+Do not replace the current login flow unnecessarily.
+
+The sign-in page must look professional and must not reveal any demo credentials.
+
+Strict credential privacy requirements
+
+Never display usernames or passwords publicly on:
+
+* The landing page.
+* The login page.
+* The registration page.
+* The footer.
+* The public FAQ section.
+* The platform overview.
+* Public notifications.
+* Tooltips visible to unauthenticated users.
+
+Do not include a visible demo username or demo password.
+
+Do not show example account credentials beside the login fields.
+
+Do not print passwords to the console.
+
+Do not expose passwords in page text, tooltips, notifications, or application logs.
+
+Requested prototype account convention
+
+For the prototype, use the following requested naming convention:
+
+Username: firstname.lastname
+
+Requested initial password convention: the same firstname.lastname value.
+
+For example, a fictional candidate named Priya Sharma would have the username priya.sharma under this convention.
+
+This is a prototype convention only. It is not secure for real-world use.
+
+Do not use this password convention for a production deployment.
+
+Do not store real user passwords in plain text or present this approach as secure authentication.
+
+If the existing project has an authentication system, inspect it and preserve its architecture.
+
+If the prototype has no real backend, implement only a clearly limited frontend authentication simulation. Keep the demonstration accounts and their roles in an appropriate internal data structure, not in public interface content.
+
+Do not pretend that a frontend-only login provides real security. A browser-only role check can be bypassed.
+
+Do not expose account passwords through a visible account directory.
+
+Initial prototype roles
+
+Use the following role assignments for the initial demonstration dataset:
+
+* Karan Saini: HR.
+* Other existing demonstration employee accounts: Employee.
+* Newly registered applicants: Candidate by default.
+
+Do not assign a newly registered applicant the HR role automatically.
+
+Do not give a new applicant employee permissions simply because they created an account.
+
+The HR role should be assigned explicitly within the prototype’s internal account data.
+
+Do not create a large number of unnecessary demonstration accounts.
+
+Keep the demonstration dataset minimal and meaningful.
+
+Do not display the internal demonstration account list to public visitors.
+
+Account creation
+
+Create a candidate registration flow.
+
+The registration process should collect only the information needed for the prototype.
+
+Use appropriate field validation.
+
+Prevent obviously incomplete registrations.
+
+Prevent duplicate usernames within the prototype’s current data store.
+
+If the username is generated from a person’s first and last name, handle duplicate names gracefully. Do not silently assign the same username to two different candidates.
+
+If two candidates would receive the same username, request an alternative username or apply a clearly explained uniqueness convention.
+
+Do not expose the candidate’s password after registration.
+
+Provide clear success and error messages.
+
+Important limitation
+
+If no backend or database connection exists, accounts created in the prototype are local demonstration accounts only.
+
+Do not claim that these accounts have been securely provisioned on a server or saved to the Oracle database.
+
+If the existing prototype already has a working authentication integration, preserve it and do not replace it with mock authentication.
+
+⸻
+
+12. CANDIDATE REGISTRATION AND RESUME SUBMISSION
+
+Create a complete and professional new-candidate interface.
+
+The interface should allow a person applying for a job to enter their details and submit a PDF resume for HR review.
+
+The page must not feel empty or unfinished.
+
+Use a well-structured form with clear sections, concise instructions, and helpful validation messages.
+
+Suggested form fields
+
+Reuse existing schema fields and application fields where available.
+
+Potential form fields include:
+
+* First name.
+* Last name.
+* Email address.
+* Phone number, if required.
+* Educational background, if relevant to the current schema.
+* Relevant skills, if supported.
+* Job or position being applied for.
+* Department, if applicable.
+* Resume in PDF format.
+
+Do not add every suggested field automatically.
+
+First inspect the existing code and available database schema.
+
+Only add fields that fit the existing data model and the purpose of the application.
+
+If the existing Oracle schema specifies particular names, data types, and relationships, use those definitions as the source of truth.
+
+Do not silently invent new Oracle columns or imply that new fields exist in the database.
+
+PDF resume upload
+
+The resume field must accept PDF files only.
+
+Implement:
+
+* A clear upload button.
+* Drag-and-drop support if practical.
+* File name display.
+* File size display.
+* File removal or replacement before submission.
+* PDF extension validation.
+* MIME-type validation where available.
+* A sensible maximum file size.
+* Clear error messages for invalid files.
+* A visible upload or submission state.
+* A success confirmation when the local prototype submission is complete.
+
+Do not accept executable files, HTML files, or arbitrary file types as resumes.
+
+Do not claim that checking the file extension alone guarantees that a file is safe.
+
+Do not display the contents of an uploaded resume to public visitors.
+
+Resume handling in a frontend-only prototype
+
+If the current application has no backend, simulate the resume submission workflow locally.
+
+Do not claim that the PDF has been sent to a real HR server.
+
+Use an appropriate browser-based approach to retain the selected file for the current session or prototype workflow, subject to browser limitations.
+
+If a file is retained only in memory, communicate that it may not survive a refresh.
+
+If local storage or IndexedDB is used, explain the limitations and avoid treating local browser storage as a secure document repository.
+
+Do not store sensitive resume data in an insecure manner merely to simulate persistence.
+
+If the existing project already implements file upload storage, inspect and preserve it rather than replacing it with a weaker implementation.
+
+After submission
+
+The candidate should see:
+
+* A confirmation that the submission was received by the prototype.
+* The selected job or application context, where applicable.
+* The current simulated application status.
+* The next expected step.
+* A route back to their candidate dashboard.
+
+The candidate should be able to view their own application status after signing in.
+
+Use accurate labels such as “Submitted”, “Under Review”, or other status values that are consistent with the existing project.
+
+Do not invent status values that conflict with the existing application or Oracle schema.
+
+⸻
+
+13. HR DASHBOARD
+
+The HR workspace is one of the most important parts of the application.
+
+It must feel like a fully considered working environment rather than a nearly empty page.
+
+The HR user should be able to manage recruitment activities, review candidate submissions, and view employee profiles through a clear navigation system.
+
+The initial HR account in the prototype should belong to Karan Saini.
+
+Do not display Karan’s account credentials publicly.
+
+HR dashboard overview
+
+Include a clear page heading, a concise welcome message, relevant actions, and a compact overview of the current prototype data.
+
+Use restrained summary metrics only when they can be calculated from the available demonstration records.
+
+Potential metrics include:
+
+* Total candidates.
+* Applications received.
+* Applications awaiting review.
+* Resumes awaiting review.
+* Hired candidates.
+* Total employees.
+
+Do not invent numbers and present them as live statistics.
+
+Calculate them from the current local demonstration dataset.
+
+If there is no data for a metric, display an honest empty state or zero.
+
+Use visualizations only when they add value.
+
+Do not fill the dashboard with unnecessary charts, decorative numbers, or duplicate summary panels.
+
+HR navigation
+
+Provide access to the relevant sections:
+
+* Overview.
+* Candidates.
+* Applications.
+* Resume Review.
+* Employees.
+* Jobs, if supported by the existing project.
+* Departments, if supported by the existing project.
+* Notifications.
+* Settings.
+
+Reuse existing pages and components wherever possible.
+
+Do not create dead-end navigation items.
+
+If a feature is not implemented and cannot be supported by the current data model, do not present it as a fully working feature.
+
+HR candidate directory
+
+The HR user must be able to view the candidates in the current prototype dataset.
+
+Include useful search and filtering functionality.
+
+Potential filters include application status, selected job, or department, where those fields exist.
+
+Show a concise summary of each candidate in the list.
+
+Do not place every personal detail directly into the list.
+
+Provide a profile action that opens the appropriate detailed view.
+
+HR employee directory
+
+The HR user must be able to see all employees and open their profiles.
+
+This requirement is essential.
+
+Create a dedicated Employee Directory page.
+
+The page should provide:
+
+* A clear heading.
+* A total employee count based on available records.
+* Search by employee name.
+* Relevant filters, where supported.
+* A readable employee list or table.
+* An action to view each employee’s profile.
+* Appropriate empty states.
+* Responsive behavior on smaller screens.
+
+Do not use a flashcard-style employee directory.
+
+Use a professional table, structured list, or another layout appropriate for viewing many records.
+
+Do not display unnecessary sensitive information directly in the directory.
+
+Employee profile details
+
+When HR selects an employee, open a profile page, side panel, or modal that displays the appropriate information.
+
+Use existing fields wherever available, including fields such as:
+
+* Employee ID.
+* Employee name.
+* Associated candidate or application information.
+* Joining date.
+* Designation.
+* Annual salary, if present in the existing data model.
+* Employment status.
+* Relevant department information, if available.
+
+The exact fields must follow the existing codebase and schema.
+
+Do not invent additional database columns.
+
+Do not assume that all fields are populated for every employee.
+
+When a field is unavailable, display a suitable placeholder such as “Not provided” rather than fabricated information.
+
+Treat salary and other sensitive employment information carefully.
+
+Show such information only within an appropriate HR-only profile view in the prototype.
+
+Do not expose private employee details on the landing page or public profile pages.
+
+Do not allow employees to browse confidential salary details belonging to other employees.
+
+Employee profile actions
+
+If the existing prototype supports employee editing, preserve and improve it.
+
+Where appropriate, allow HR to edit permitted employee details.
+
+If deletion or removal is supported, require confirmation before the action.
+
+For destructive actions, explain the consequences clearly.
+
+Do not introduce irreversible actions without confirmation.
+
+In a frontend-only prototype, changes must remain local to the prototype and must not be presented as changes to a real corporate database.
+
+⸻
+
+14. HR RESUME REVIEW AND APPLICATION WORKFLOW
+
+Create a functional resume review interface for HR.
+
+This is where submitted candidate applications should be reviewed.
+
+Resume review list
+
+Show a list of submitted applications using the available local prototype data.
+
+Include relevant fields such as:
+
+* Candidate name.
+* Applied position.
+* Department, where available.
+* Submission date, if available.
+* Current application status.
+* Resume availability.
+* Review action.
+
+Do not invent dates or statuses for existing records.
+
+Keep the list easy to scan.
+
+Opening a candidate submission
+
+When HR selects a candidate, open a detailed review interface.
+
+Display the candidate’s relevant profile information.
+
+If the resume is available to the prototype, allow HR to preview or open the PDF.
+
+If the file is unavailable, explain that clearly.
+
+Do not fabricate a resume preview.
+
+Do not allow public visitors or unrelated candidates to access submitted resumes.
+
+HR review actions
+
+Provide appropriate review actions, such as:
+
+* Mark as Under Review.
+* Approve or move forward.
+* Reject.
+* Request additional information, if supported by the current workflow.
+
+Adapt these actions to the existing status model.
+
+If the current code or Oracle schema uses a specific set of status values, preserve those values and map the interface actions to them correctly.
+
+Do not create conflicting status labels.
+
+Use confirmation for significant actions such as rejection.
+
+When an action is completed, update the local prototype state immediately and show clear feedback.
+
+The application list, candidate dashboard, and HR dashboard should reflect the updated local status consistently.
+
+Do not implement these as disconnected buttons that only display a success toast without updating the relevant state.
+
+Candidate privacy
+
+A candidate may view their own application status.
+
+A candidate must not be able to view HR-only review notes or another candidate’s application.
+
+If review notes exist in the prototype, keep them separate from information intended for the candidate.
+
+Do not expose private HR comments through the public interface.
+
+Prototype limitation
+
+All simulated review decisions must be clearly distinguished from actual server-side processing.
+
+Do not claim that an actual email, SMS, or external notification was sent unless the appropriate service is connected.
+
+⸻
+
+15. EMPLOYEE CREATION AND HIRING WORKFLOW
+
+The HR user should have a clear way to create an employee through the appropriate recruitment workflow.
+
+Do not create employee records arbitrarily without considering their associated candidate and application.
+
+First inspect the current project and its existing data relationships.
+
+If the existing Oracle recruitment schema requires an employee to be associated with a candidate and application, preserve that relationship in the frontend model.
+
+Expected workflow
+
+1. HR opens an eligible candidate application.
+2. HR reviews the candidate’s information.
+3. HR selects the hiring action.
+4. The system displays a confirmation or hiring form.
+5. HR provides the required employment information, such as designation, annual salary, and joining date, where applicable.
+6. The system validates the required fields.
+7. The frontend creates a simulated employee record associated with the correct candidate and application.
+8. The employee appears in the HR Employee Directory.
+9. The application status is updated consistently.
+10. The candidate is no longer eligible for another duplicate hiring action.
+
+Use the existing schema and current application logic to determine the exact requirements.
+
+Duplicate prevention
+
+Prevent the same application from creating multiple employee records.
+
+Prevent a candidate from being hired repeatedly through the same application.
+
+Respect existing application status constraints.
+
+If the existing schema or procedure defines specific hiring eligibility conditions, preserve them in the simulated frontend workflow.
+
+Existing Oracle procedure
+
+The existing project has an ER_HIRE_CANDIDATE procedure that handles hiring logic in Oracle.
+
+Inspect the existing implementation and its corresponding data relationships before designing the frontend hiring form.
+
+Do not modify or remove the Oracle procedure merely to simplify the frontend.
+
+Do not claim that the frontend invokes the Oracle procedure if no database connection exists.
+
+The frontend should simulate the intended workflow locally until a real backend is implemented.
+
+⸻
+
+16. EMPLOYEE WORKSPACE
+
+The employee workspace must contain useful, relevant information.
+
+Do not leave the workspace looking empty when the user selects “Open Workspace”.
+
+Use a clean dashboard layout with a clear heading and a concise welcome message.
+
+Employee dashboard sections
+
+Include appropriate sections such as:
+
+* My Profile.
+* Employment Details.
+* Personal Information.
+* Notifications.
+* Account Settings.
+* Help and Support.
+
+Only show sections that fit the current data model.
+
+Relevant dashboard content
+
+Display the signed-in employee’s own information when it exists in the current prototype data.
+
+Use clear labels and readable typography.
+
+If some fields are missing, use honest placeholders rather than invented personal information.
+
+You may include small, useful interface elements such as:
+
+* A profile completion indicator.
+* A recent activity section.
+* A compact notification area.
+* Helpful shortcuts to common tasks.
+
+These elements must be based on actual local prototype state or clearly identified illustrative content.
+
+Do not fabricate important employment events or official company announcements.
+
+Do not display an excessive number of decorative widgets.
+
+Permissions
+
+Employees must be able to see their own profile.
+
+They must not automatically gain HR access.
+
+They must not be able to view other employees’ private information.
+
+Any frontend role checks are only prototype-level demonstrations and must not be described as secure production authorization.
+
+⸻
+
+17. CANDIDATE WORKSPACE
+
+The candidate workspace must provide a complete experience after sign-in.
+
+Do not leave the candidate dashboard empty or display unrelated employee information.
+
+Candidate dashboard content
+
+Include:
+
+* A welcome message.
+* Candidate profile overview.
+* Application status.
+* Selected job or position, where applicable.
+* Resume submission status.
+* Resume update action, where supported.
+* Relevant next steps.
+* Notifications or help.
+* Account settings.
+
+Use only the candidate’s own data.
+
+Application status
+
+Show the candidate’s current status clearly.
+
+Use the existing application’s status values where possible.
+
+If the candidate has not submitted an application, show an appropriate call-to-action.
+
+If an application has been submitted, show its current status and the next relevant action.
+
+Do not promise a specific response time unless it is explicitly configured and accurate.
+
+Resume handling
+
+If a resume has been submitted in the current browser session or prototype storage, show its availability and file name where appropriate.
+
+Do not expose the resume to other candidates.
+
+If the file is no longer available after a refresh, explain that it needs to be uploaded again.
+
+Do not falsely indicate that HR has reviewed a resume when no review action has occurred.
+
+Profile editing
+
+Allow candidates to edit appropriate profile fields where supported.
+
+Validate the inputs.
+
+Keep the application and profile data consistent.
+
+If the candidate changes information that affects their application, update the relevant local prototype state.
+
+Do not silently change the status of an application merely because profile information was edited.
+
+⸻
+
+18. CHATBOT WITH PRE-GENERATED PROMPTS
+
+Add a functional chatbot to the application.
+
+The chatbot should provide help with the platform and its recruitment workflows.
+
+It must be available throughout the site, including the landing page and the authenticated workspaces.
+
+Chatbot appearance
+
+Use a refined floating launcher positioned consistently in the interface.
+
+The launcher should remain accessible without covering important controls.
+
+Use the glass-inspired visual direction selectively.
+
+When opened, the chatbot should appear as a polished panel or responsive dialog.
+
+The chatbot must support both light and dark themes.
+
+Use the global Times New Roman typography rules.
+
+Provide a clear close button.
+
+On smaller screens, ensure that the chatbot remains usable without obscuring the entire interface unnecessarily.
+
+Pre-generated prompts
+
+Include a row or grid of clickable suggested prompts when the chatbot opens.
+
+Use role-relevant suggestions.
+
+For public visitors:
+
+* What does this platform do?
+* How do I apply for a job?
+* How do I create an account?
+* Where can I find the FAQs?
+
+For candidates:
+
+* How do I upload my resume?
+* How can I check my application status?
+* Can I update my profile?
+* What happens after I submit my application?
+* Why is my resume still under review?
+
+For employees:
+
+* How do I view my profile?
+* Where can I find my employment details?
+* How do I change the theme?
+* How do I navigate my workspace?
+
+For HR:
+
+* How do I review candidate applications?
+* Where can I find the employee directory?
+* How do I open an employee profile?
+* How do I update an application status?
+* How do I hire an eligible candidate?
+
+Display only the relevant suggestions for the current role.
+
+Chatbot functionality
+
+The chatbot must not be a decorative mockup.
+
+When a user clicks a suggested prompt, show the prompt in the conversation and provide a relevant response.
+
+Provide a text input and a send action.
+
+Support Enter to send where appropriate.
+
+Include a simple conversation history for the current session.
+
+Provide a clear empty state and a helpful greeting.
+
+Chatbot intelligence and limitations
+
+If no external AI service is connected, implement a reliable rule-based assistant using predefined responses and simple intent matching.
+
+The chatbot should provide useful answers about the actual implemented application.
+
+It should explain:
+
+* How to navigate the platform.
+* How to submit a resume.
+* How to view application status.
+* How HR reviews applications.
+* How employees access their workspace.
+* How the theme toggle works.
+* Which features are currently simulated.
+
+Do not pretend that a rule-based chatbot is a fully connected AI model.
+
+Do not make up answers to questions about private records.
+
+Do not expose another user’s information.
+
+Do not reveal usernames or passwords.
+
+Do not include confidential employee information in suggested prompts or default responses.
+
+If the chatbot cannot answer a question, it should explain its limitation and direct the user to the relevant page or HR workspace.
+
+Do not allow the chatbot to claim that it has updated an actual database record unless such an integration exists.
+
+⸻
+
+19. REMOVE FLASHCARD-STYLE DESIGN
+
+I do not want the application to look like a collection of flashcards.
+
+Avoid repetitive card-based layouts across the entire website.
+
+This applies to:
+
+* Landing page features.
+* Platform overview.
+* HR dashboard.
+* Employee directory.
+* Candidate directory.
+* Employee profiles.
+* Application lists.
+* Resume review.
+* Candidate workspace.
+* Employee workspace.
+
+Use different layouts depending on the content.
+
+Preferred layouts
+
+For directories:
+
+* Tables.
+* Searchable lists.
+* Structured rows.
+* Split-pane layouts.
+* Profile side panels.
+
+For dashboards:
+
+* A clear page header.
+* Compact summary metrics.
+* A primary working area.
+* A useful activity or notification panel.
+* Contextual actions.
+
+For landing pages:
+
+* Editorial layouts.
+* Asymmetrical feature compositions.
+* Alternating text and visual sections.
+* Horizontal timelines.
+* Carefully structured feature grids.
+
+For profiles:
+
+* A clear identity header.
+* Grouped information sections.
+* A structured detail view.
+* A side panel or dedicated profile page.
+
+For application review:
+
+* A searchable application list.
+* A detailed review pane.
+* A clear status indicator.
+* Contextual actions.
+
+Cards may still be used when they genuinely improve the information hierarchy.
+
+Do not eliminate all cards mechanically. The objective is to avoid the repetitive flashcard appearance, not to prohibit every contained surface.
+
+⸻
+
+20. SIDEBAR AND COLLAPSED DASHBOARD BEHAVIOUR
+
+Improve the sidebar and dashboard layout while preserving its current working behavior.
+
+Expanded sidebar
+
+The expanded sidebar may contain:
+
+* The official logo.
+* The appropriate workspace name.
+* Navigation labels.
+* Icons.
+* Active navigation indicators.
+* Collapse control.
+* Relevant user controls.
+
+Keep the navigation concise and organized.
+
+Collapsed sidebar
+
+When the dashboard sidebar is minimized, remove the logo from the collapsed sidebar.
+
+Do not display a tiny logo, a broken logo fragment, or a partially visible brand mark in the collapsed state.
+
+Use a clean, compact sidebar with navigation icons.
+
+Provide tooltips for icon-only navigation items.
+
+Ensure tooltips work in both themes and do not obstruct important content.
+
+The collapse control must continue to work.
+
+The main content area should expand naturally when the sidebar collapses.
+
+Avoid sudden layout jumps.
+
+Preserve the selected navigation item.
+
+If the sidebar state is persisted in the existing implementation, preserve that behavior.
+
+Do not remove the official logo from the expanded navigation or public landing page. This requirement applies specifically to the minimized dashboard sidebar.
+
+⸻
+
+21. SEARCH, FILTERS, FORMS, TABLES, AND INTERACTION REQUIREMENTS
+
+Every visible control must have a meaningful purpose.
+
+Do not add buttons that look interactive but do nothing.
+
+Search
+
+Implement real local search against the relevant prototype dataset.
+
+Search should return matching records.
+
+Include a clear empty state when nothing matches.
+
+Do not implement a search field that only changes its placeholder or displays a decorative result.
+
+Filters
+
+Filters must change the displayed records.
+
+If a filter is provided for application status, it must filter the relevant application status.
+
+If a filter is provided for a job or department, it must use the corresponding data field.
+
+Do not create filters that return arbitrary records.
+
+Forms
+
+Validate required fields.
+
+Provide clear validation messages.
+
+Do not silently accept invalid input.
+
+Keep the user informed about submission results.
+
+Tables
+
+Make tables readable and responsive.
+
+Use clear headings.
+
+Avoid excessive column counts.
+
+On smaller screens, use a suitable responsive table treatment or structured list.
+
+Ensure that actions remain accessible.
+
+Modals and dialogs
+
+Use modals for appropriate contextual actions, including profile previews and confirmation steps.
+
+Provide clear close controls.
+
+Ensure keyboard accessibility where practical.
+
+Do not open unnecessary nested modals.
+
+Notifications
+
+Provide consistent success, warning, and error messages.
+
+Do not show a success message if the underlying action has failed.
+
+Avoid excessive toast notifications.
+
+Empty states
+
+Empty states should explain what is missing and offer a useful next step where appropriate.
+
+Do not fill empty states with fabricated personal records.
+
+⸻
+
+22. LOCAL DEMONSTRATION DATA AND PRIVACY
+
+Keep demonstration data to a minimum.
+
+The objective is to demonstrate the system’s workflows, not to create a large fictional database.
+
+Reuse appropriate existing demonstration records when they are already present and relevant.
+
+Remove unnecessary or repetitive records where appropriate.
+
+Do not add realistic personal information simply to make tables appear full.
+
+Required initial role assignments
+
+* Karan Saini: HR.
+* Other existing demonstration employee accounts: Employee.
+* Newly registered applicants: Candidate.
+
+If the existing application already has relevant records, inspect and reuse them where possible.
+
+Do not create duplicate records unnecessarily.
+
+Consistent local data
+
+Where a candidate submits an application, that application should appear in the HR review interface.
+
+Where HR updates its status, the candidate dashboard should reflect that change.
+
+Where HR hires an eligible candidate, the employee should appear in the employee directory.
+
+Where HR edits an employee’s permitted details, the corresponding employee profile should reflect the change.
+
+Do not maintain separate disconnected mock datasets for each page.
+
+Use a coherent local data model and shared state management.
+
+If the current project already uses a suitable state management approach, preserve it.
+
+Local persistence
+
+Where appropriate, use local storage or the existing client-side persistence method to maintain non-sensitive demonstration state across refreshes.
+
+However:
+
+* Do not store real passwords in plain text.
+* Do not treat browser storage as secure storage.
+* Do not store sensitive resumes or personal information unnecessarily.
+* Do not claim local data is synchronized with Oracle.
+* Do not claim local changes are visible to other users or devices.
+* Do not imply that frontend role checks provide real access control.
+
+If the current prototype requires a reset mechanism for demonstration purposes, provide a clearly labelled development-only reset action within an appropriate internal interface. Do not expose destructive reset controls on the public landing page.
+
+⸻
+
+23. ORACLE DATABASE AND EXISTING PROJECT LOGIC
+
+The current project is intended to represent an Employee Recruitment System associated with Oracle SQL*Plus.
+
+The current frontend work must not silently change the meaning of the underlying recruitment workflow.
+
+Inspect the existing project files and any provided SQL reference material before changing data models or application logic.
+
+Where the existing schema is available, treat it as the source of truth for:
+
+* Candidate information.
+* Job information.
+* Department information.
+* Application records.
+* Application status.
+* Employee records.
+* Employee status.
+* Hiring requirements.
+* Relationships between candidates, applications, and employees.
+
+Do not invent database columns, relationships, constraints, or status values and present them as existing Oracle functionality.
+
+Where the frontend needs additional presentation-only fields, keep them separate from the assumed Oracle schema and clearly identify them as frontend-only.
+
+Frontend-only scope
+
+For this phase, do not implement a new backend or create a new Oracle connection.
+
+Do not add:
+
+* New database connection credentials.
+* New backend services.
+* New server-side authentication.
+* Unrequested database migrations.
+* Unrequested database tables.
+* A new API layer presented as connected when it is not.
+* A fake database integration.
+
+Keep the work focused on the frontend prototype.
+
+Implement the user-facing workflows through coherent local state and minimal demonstration data.
+
+Do not claim that the application is connected to Oracle SQL*Plus.
+
+Do not claim that an employee was inserted into the Oracle database when only local state changed.
+
+Do not claim that a candidate resume was stored in the Oracle database.
+
+Do not remove or rewrite existing SQL-related reference files simply because the frontend does not use them directly.
+
+Preserve the existing codebase’s intended future integration path.
+
+⸻
+
+24. RESPONSIVE DESIGN AND ACCESSIBILITY
+
+The application must work across:
+
+* Desktop screens.
+* Laptops.
+* Tablets.
+* Mobile devices.
+
+Do not design exclusively for a wide desktop screen.
+
+Responsive requirements
+
+On smaller screens:
+
+* The navigation must remain usable.
+* The theme toggle must remain accessible.
+* The sidebar should adapt appropriately.
+* Tables must remain readable.
+* Forms must not overflow horizontally.
+* Modals must fit the viewport.
+* The chatbot must remain usable.
+* The landing page must retain its visual hierarchy.
+* Important actions must not be hidden behind decorative elements.
+
+Accessibility
+
+Implement appropriate:
+
+* Semantic headings.
+* Labels for form controls.
+* Keyboard focus states.
+* Accessible buttons.
+* Alternative text for meaningful images.
+* Sufficient colour contrast.
+* Error descriptions.
+* Keyboard-accessible navigation.
+* Reduced-motion support.
+
+Do not rely on colour alone to communicate application status.
+
+Do not use animations that prevent users from interacting with the interface.
+
+⸻
+
+25. PERFORMANCE AND CODE QUALITY
+
+Preserve the existing framework and project architecture.
+
+Use the existing dependency stack wherever practical.
+
+Avoid adding dependencies simply to reproduce effects that can be implemented using the current tools.
+
+Keep components reusable and organized.
+
+Avoid duplicating large blocks of code across the four interfaces.
+
+Maintain a consistent theme system.
+
+Use shared components where appropriate for:
+
+* Navigation.
+* Sidebar.
+* Theme toggle.
+* Buttons.
+* Form fields.
+* Modal dialogs.
+* Status indicators.
+* Search controls.
+* Notifications.
+* Chatbot.
+* Profile layouts.
+
+Do not create an unnecessarily complicated architecture for a frontend prototype.
+
+Avoid introducing memory leaks through animations or event listeners.
+
+Ensure that file upload previews and object URLs are handled appropriately.
+
+Check the browser console for errors.
+
+Do not leave broken imports, missing assets, invalid component references, or placeholder routes.
+
+Do not leave development error overlays visible in the final prototype.
+
+⸻
+
+26. IMPLEMENTATION ORDER
+
+Implement the changes in the following order so that the existing project remains stable.
+
+Phase 1: Inspect and protect
+
+* Inspect the current codebase.
+* Identify the existing application entry point.
+* Understand the current routing.
+* Identify existing working features.
+* Map existing pages to the four required interfaces.
+* Identify the current theme implementation.
+* Identify existing data structures and mock records.
+* Identify existing login behavior.
+* Record which functionality must be preserved.
+
+Do not delete or replace the project at this stage.
+
+Phase 2: Branding and design system
+
+* Update the browser tab title.
+* Set the appropriate favicon.
+* Apply the Blue Star-inspired colour palette.
+* Apply Times New Roman as the global body font.
+* Establish the heading typography exception.
+* Create the light and dark theme tokens.
+* Implement the animated background.
+* Establish consistent button, hover, focus, and transition styles.
+* Preserve the existing application’s layout architecture.
+
+Phase 3: Public website
+
+* Redesign the landing page.
+* Remove personal and confidential information from public sections.
+* Implement the navigation destinations.
+* Add meaningful Platform, About Us, Contact Us, and FAQ content.
+* Rebuild the Privacy Policy page.
+* Verify the public theme toggle.
+* Ensure every public navigation item works.
+
+Phase 4: Authentication and roles
+
+* Preserve the existing login architecture.
+* Remove visible demo credentials.
+* Implement the requested prototype username convention.
+* Preserve the specified initial role assignments.
+* Add candidate registration.
+* Add appropriate form validation.
+* Ensure that new applicants receive the Candidate role by default.
+* Prevent obvious duplicate account creation within the local prototype.
+* Do not claim that frontend-only authentication is production-secure.
+
+Phase 5: Candidate workflow
+
+* Implement candidate profile creation.
+* Implement PDF resume selection and validation.
+* Implement the local submission flow.
+* Show an accurate submission confirmation.
+* Add the candidate dashboard.
+* Show application status.
+* Ensure candidates can access only their own prototype data.
+
+Phase 6: HR workflow
+
+* Improve the HR dashboard.
+* Implement candidate search and review.
+* Implement resume review.
+* Implement application status changes.
+* Build the Employee Directory.
+* Implement employee profile views.
+* Implement the simulated hiring workflow.
+* Prevent duplicate hiring in the local prototype.
+* Ensure dashboard metrics reflect the underlying local data.
+
+Phase 7: Employee workspace
+
+* Improve the employee dashboard.
+* Display the signed-in employee’s own permitted information.
+* Add relevant profile and settings sections.
+* Preserve employee-level access limitations.
+* Implement the collapsed sidebar behavior without the logo.
+
+Phase 8: Chatbot
+
+* Add the floating chatbot launcher.
+* Add role-specific suggested prompts.
+* Implement predefined responses.
+* Implement basic input and send functionality.
+* Ensure responses relate to the actual application.
+* Apply the site-wide theme and typography.
+* Ensure the chatbot works on mobile.
+
+Phase 9: Final integration and testing
+
+* Test every route.
+* Test all visible navigation options.
+* Test all important buttons.
+* Test login and logout behavior.
+* Test candidate registration.
+* Test PDF validation.
+* Test application submission.
+* Test HR review actions.
+* Test employee profile viewing.
+* Test simulated hiring.
+* Test local state consistency.
+* Test light mode and dark mode across every interface.
+* Test the animated background.
+* Test the collapsed sidebar.
+* Test the chatbot.
+* Test responsive behavior.
+* Check browser console errors.
+* Fix regressions before completing the task.
+
+⸻
+
+27. REQUIRED ACCEPTANCE TESTS
+
+Do not consider the work complete until the following requirements have been checked.
+
+Branding
+
+* The browser title is exactly “Blue Star’s - Employee Recruitment System”.
+* The favicon uses the appropriate official logo asset where available.
+* The application uses the intended Blue Star visual identity.
+* The old unrelated project title is not left in place.
+
+Privacy
+
+* The landing page contains no personal candidate or employee information.
+* The landing page contains no credentials.
+* The login page does not display demo usernames or passwords.
+* Passwords are not printed to the console.
+* Candidate information is not publicly accessible through navigation.
+* Employee details are not exposed on public pages.
+* The privacy policy accurately explains prototype limitations.
+
+Navigation
+
+* Platform opens its relevant destination.
+* About Us opens its relevant destination.
+* Contact Us opens its relevant destination.
+* FAQs opens its relevant destination.
+* Privacy Policy opens its relevant destination.
+* Sign In opens the sign-in interface.
+* The correct workspace opens after the prototype’s role check.
+* Browser back navigation works appropriately.
+
+Themes
+
+* Light mode works on the landing page.
+* Dark mode works on the landing page.
+* Light mode works in HR.
+* Dark mode works in HR.
+* Light mode works in the employee workspace.
+* Dark mode works in the employee workspace.
+* Light mode works in the candidate workspace.
+* Dark mode works in the candidate workspace.
+* Forms, tables, dialogs, navigation, and chatbot adapt correctly.
+* The preference persists across navigation.
+
+Typography
+
+* Times New Roman is used for body text throughout the application.
+* Headings and logos use only justified exceptions.
+* Dynamically rendered elements follow the typography rules.
+
+Candidate workflow
+
+* A new candidate can register.
+* The candidate receives the Candidate role by default.
+* Invalid forms show useful errors.
+* Duplicate usernames are handled appropriately.
+* The candidate can select a PDF resume.
+* Invalid file types are rejected.
+* A candidate can submit an application through the local prototype.
+* The candidate can view their own application status.
+* The candidate cannot access another candidate’s private information.
+
+HR workflow
+
+* Karan Saini is assigned the HR role in the initial demonstration data.
+* HR can view the candidate directory.
+* HR can review available candidate submissions.
+* HR can view submitted resumes when the files are available.
+* HR can update supported application statuses.
+* The candidate interface reflects local status changes.
+* HR can open the Employee Directory.
+* HR can open individual employee profiles.
+* HR can access the appropriate employee details.
+* HR can hire an eligible candidate through the simulated workflow.
+* The same application cannot create duplicate employee records.
+
+Employee workflow
+
+* Employees open the employee workspace rather than the HR dashboard.
+* Employees can view their own permitted profile information.
+* Employees cannot access HR-only screens through the ordinary interface.
+* The collapsed sidebar does not display the logo.
+* Sidebar navigation remains usable when collapsed.
+
+Chatbot
+
+* The chatbot launcher is visible and functional.
+* The chatbot opens and closes correctly.
+* Suggested prompts are clickable.
+* The chatbot provides relevant responses.
+* The chatbot changes appearance with the selected theme.
+* The chatbot does not reveal credentials or private records.
+* The chatbot remains usable on mobile.
+
+Visual quality
+
+* The background animation is visible but subtle.
+* Animation does not obstruct text or controls.
+* The application does not look like a collection of repetitive flashcards.
+* Buttons have clear borders and hover states.
+* The interface remains readable in both themes.
+* The dashboard does not look unnecessarily empty.
+* The application remains usable on smaller screens.
+
+Existing functionality
+
+* Existing working functionality has been preserved.
+* Existing routes have not been broken.
+* Existing data structures have not been unnecessarily replaced.
+* No unrelated feature has been silently removed.
+* No new backend or Oracle connection has been falsely represented as implemented.
+* No critical errors remain in the browser console.
+
+⸻
+
+28. FINAL INSTRUCTIONS
+
+Prioritize the following in order:
+
+1. Preserve the current prototype and its working functionality.
+2. Protect privacy and avoid exposing credentials or confidential records.
+3. Implement the required role-specific workflows.
+4. Ensure the candidate-to-application-to-employee workflow is coherent.
+5. Make the landing page, navigation, and workspaces genuinely functional.
+6. Implement the site-wide theme system.
+7. Apply the requested typography and animated visual design.
+8. Add the chatbot and role-specific suggested prompts.
+9. Improve visual polish without sacrificing usability.
+10. Verify the result and fix regressions.
+
+Do not focus exclusively on visual appearance while leaving buttons and workflows nonfunctional.
+
+Do not focus exclusively on functionality while ignoring the requested visual design.
+
+Both are required.
+
+Do not fill the application with excessive mock data.
+
+Do not display demo credentials to users.
+
+Do not fabricate a real backend or database connection.
+
+Do not claim that the prototype provides production-grade security.
+
+Do not stop at the landing page. The HR, employee, and candidate workspaces must all be meaningfully implemented.
+
+MOST IMPORTANT: CONTINUE EDITING THE EXISTING PROJECT. DO NOT REPLACE IT WITH A NEW APPLICATION.
+
+Make targeted, compatible changes to the current codebase. Reuse working components and existing logic wherever possible. Preserve all unrelated functionality. Test the result and fix any regressions before declaring the task complete.
+
+When finished, provide a concise implementation summary stating:
+
+* Which existing files or components were modified.
+* Which new components or pages were added.
+* Which existing features were preserved.
+* Which new workflows are functional in the frontend.
+* Which actions are simulated locally.
+* Which features still require a backend for real authentication, secure resume storage, multi-user access, or Oracle integration.
+* Whether any requested requirement could not be implemented.
+
+Do not claim a feature is complete unless it has actually been implemented and checked.

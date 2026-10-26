@@ -8,18 +8,23 @@ import {
   HireCandidateInput,
   JobInput,
   OperationResult,
+  RegisterCandidateInput,
   ScheduleInterviewInput,
   UpdateEmployeeInput,
   UpdateInterviewFeedbackInput,
   addCandidate as opAddCandidate,
   applyForJob as opApplyForJob,
+  buildPrototypeUsername,
   calculateDashboardMetrics,
   createDepartment as opCreateDepartment,
   createEmployeeDirect as opCreateEmployeeDirect,
   createJob as opCreateJob,
   deleteDepartment as opDeleteDepartment,
+  deleteEmployee as opDeleteEmployee,
   deleteJob as opDeleteJob,
   hireCandidate as opHireCandidate,
+  registerCandidateWorkflow as opRegisterCandidateWorkflow,
+  saveCandidateResume as opSaveCandidateResume,
   scheduleInterview as opScheduleInterview,
   selectCandidateApplicationView,
   selectDepartmentSummaries,
@@ -33,24 +38,18 @@ import {
   updateJob as opUpdateJob,
 } from '../model/operations';
 import {
-  EmploymentStatus,
+  CandidateResumeRecord,
   EnrichedEmployee,
   ErVCandidateApplication,
   ErVInterviewDetails,
+  PrototypeAccount,
   RecruitmentDatabaseState,
 } from '../model/schema';
 import { createInitialDatabaseState } from '../model/seedData';
 
-const STORAGE_KEY_DB = 'bluestar_ers_db_v1';
+const STORAGE_KEY_DB = 'bluestar_ers_db_v2';
 const STORAGE_KEY_THEME = 'bluestar_ers_theme_v1';
-const STORAGE_KEY_AUTH = 'bluestar_ers_auth_v1';
-
-export const DEMO_CREDENTIALS = {
-  username: 'demo.employee',
-  password: 'demo.employee',
-  displayName: 'Demo Recruitment Officer',
-  role: 'HR Operations (Local Simulation)',
-};
+const STORAGE_KEY_AUTH_USER = 'bluestar_ers_auth_user_v2';
 
 export interface ToastItem {
   id: string;
@@ -65,8 +64,12 @@ interface RecruitmentContextValue {
   toggleTheme: () => void;
   setTheme: (t: 'light' | 'dark') => void;
   isAuthenticated: boolean;
-  demoUser: typeof DEMO_CREDENTIALS | null;
-  login: (username: string, password: string) => { ok: boolean; error?: string };
+  currentUser: PrototypeAccount | null;
+  demoUser: PrototypeAccount | null;
+  login: (
+    username: string,
+    password: string
+  ) => { ok: boolean; error?: string; account?: PrototypeAccount };
   logout: () => void;
   toasts: ToastItem[];
   dismissToast: (id: string) => void;
@@ -82,6 +85,10 @@ interface RecruitmentContextValue {
   // Operations
   addCandidate: (input: AddCandidateInput) => OperationResult;
   updateCandidate: (candidateId: number, input: AddCandidateInput) => OperationResult;
+  registerCandidate: (
+    input: RegisterCandidateInput
+  ) => OperationResult & { createdUsername?: string; createdCandidateId?: number };
+  saveCandidateResume: (resume: CandidateResumeRecord) => OperationResult;
   createJob: (input: JobInput) => OperationResult;
   updateJob: (jobId: number, input: JobInput) => OperationResult;
   deleteJob: (jobId: number) => OperationResult;
@@ -89,7 +96,8 @@ interface RecruitmentContextValue {
   updateApplicationStatus: (
     applicationId: number,
     newStatus: string,
-    remarks?: string | null
+    remarks?: string | null,
+    hrNotes?: string | null
   ) => OperationResult;
   scheduleInterview: (input: ScheduleInterviewInput) => OperationResult;
   updateInterviewFeedback: (
@@ -99,6 +107,7 @@ interface RecruitmentContextValue {
   hireCandidate: (input: HireCandidateInput) => OperationResult;
   createEmployeeDirect: (input: CreateEmployeeInput) => OperationResult;
   updateEmployee: (employeeId: number, input: UpdateEmployeeInput) => OperationResult;
+  deleteEmployee: (employeeId: number) => OperationResult;
   createDepartment: (deptName: string) => OperationResult;
   updateDepartment: (deptId: number, deptName: string) => OperationResult;
   deleteDepartment: (deptId: number) => OperationResult;
@@ -108,9 +117,10 @@ interface RecruitmentContextValue {
 const RecruitmentContext = createContext<RecruitmentContextValue | null>(null);
 
 function loadStoredDatabase(): RecruitmentDatabaseState {
+  const initial = createInitialDatabaseState();
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY_DB);
-    if (!raw) return createInitialDatabaseState();
+    if (!raw) return initial;
     const parsed = JSON.parse(raw) as RecruitmentDatabaseState;
     if (
       !parsed ||
@@ -123,11 +133,18 @@ function loadStoredDatabase(): RecruitmentDatabaseState {
       !Array.isArray(parsed.employees) ||
       !Array.isArray(parsed.audits)
     ) {
-      return createInitialDatabaseState();
+      return initial;
     }
-    return parsed;
+    return {
+      ...parsed,
+      resumes: Array.isArray(parsed.resumes) ? parsed.resumes : initial.resumes,
+      accounts:
+        Array.isArray(parsed.accounts) && parsed.accounts.length > 0
+          ? parsed.accounts
+          : initial.accounts,
+    };
   } catch {
-    return createInitialDatabaseState();
+    return initial;
   }
 }
 
@@ -135,34 +152,72 @@ function loadStoredTheme(): 'light' | 'dark' {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY_THEME);
     if (saved === 'dark' || saved === 'light') return saved;
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+    ) {
+      return 'dark';
+    }
   } catch {
     // ignore
   }
   return 'light';
 }
 
-function loadStoredAuth(): boolean {
+function loadStoredUser(db: RecruitmentDatabaseState): PrototypeAccount | null {
   try {
     const params = new URLSearchParams(window.location.search);
     if (params.get('autostart') === '1') {
-      window.localStorage.setItem(STORAGE_KEY_AUTH, 'true');
-      return true;
+      const hrAccount =
+        db.accounts.find((a) => a.role === 'HR') ?? {
+          username: 'karan.saini',
+          fullName: 'Karan Saini',
+          displayName: 'Karan Saini',
+          role: 'HR' as const,
+          candidateId: 1003,
+        };
+      window.localStorage.setItem(STORAGE_KEY_AUTH_USER, hrAccount.username);
+      return { ...hrAccount, displayName: hrAccount.displayName ?? hrAccount.fullName };
     }
-    return window.localStorage.getItem(STORAGE_KEY_AUTH) === 'true';
+    const savedUsername = window.localStorage.getItem(STORAGE_KEY_AUTH_USER);
+    if (!savedUsername) return null;
+    const found = db.accounts.find(
+      (a) => a.username.toLowerCase() === savedUsername.toLowerCase()
+    );
+    return found ? { ...found, displayName: found.displayName ?? found.fullName } : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
 export const RecruitmentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [db, setDb] = useState<RecruitmentDatabaseState>(() => loadStoredDatabase());
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => loadStoredTheme());
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => loadStoredAuth());
+  const [currentUsername, setCurrentUsername] = useState<string | null>(() => {
+    const initialUser = loadStoredUser(loadStoredDatabase());
+    return initialUser?.username ?? null;
+  });
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [refreshTick, setRefreshTick] = useState<number>(0);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string>(() =>
     new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   );
+
+  const currentUser = useMemo<PrototypeAccount | null>(() => {
+    if (!currentUsername) return null;
+    const u = currentUsername.toLowerCase();
+    const fromAccounts = db.accounts.find((a) => a.username.toLowerCase() === u);
+    if (fromAccounts) {
+      return {
+        ...fromAccounts,
+        displayName: fromAccounts.displayName ?? fromAccounts.fullName,
+      };
+    }
+    return null;
+  }, [db.accounts, currentUsername]);
+
+  const isAuthenticated = currentUser !== null;
 
   // Sync theme with document root
   useEffect(() => {
@@ -179,12 +234,20 @@ export const RecruitmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [theme]);
 
-  // Persist database changes to localStorage
+  // Persist database changes to localStorage (excluding large dataUrls if quota is exceeded)
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(db));
     } catch {
-      // ignore storage quota errors
+      try {
+        const compactDb: RecruitmentDatabaseState = {
+          ...db,
+          resumes: db.resumes.map((r) => ({ ...r, dataUrl: undefined })),
+        };
+        window.localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(compactDb));
+      } catch {
+        // ignore storage quota errors
+      }
     }
   }, [db]);
 
@@ -212,39 +275,101 @@ export const RecruitmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, []);
 
   const login = useCallback(
-    (usernameInput: string, passwordInput: string): { ok: boolean; error?: string } => {
+    (
+      usernameInput: string,
+      passwordInput: string
+    ): { ok: boolean; error?: string; account?: PrototypeAccount } => {
       const u = (usernameInput ?? '').trim().toLowerCase();
-      const p = (passwordInput ?? '').trim();
+      const p = (passwordInput ?? '').trim().toLowerCase();
       if (!u || !p) {
         return { ok: false, error: 'Please enter both username and password.' };
       }
-      if (u === DEMO_CREDENTIALS.username && p === DEMO_CREDENTIALS.password) {
-        setIsAuthenticated(true);
+
+      // Prototype convention: username is firstname.lastname and initial password equals username
+      if (u !== p) {
+        return {
+          ok: false,
+          error: 'Invalid username or password. Please verify your credentials and try again.',
+        };
+      }
+
+      // Support legacy demo.employee alias mapped to HR for backward compatibility
+      if (u === 'demo.employee') {
+        const hrAcc =
+          db.accounts.find((a) => a.role === 'HR') ?? {
+            username: 'karan.saini',
+            fullName: 'Karan Saini',
+            displayName: 'Karan Saini',
+            role: 'HR' as const,
+            candidateId: 1003,
+          };
+        const normalizedHr = { ...hrAcc, displayName: hrAcc.displayName ?? hrAcc.fullName };
+        setCurrentUsername(normalizedHr.username);
         try {
-          window.localStorage.setItem(STORAGE_KEY_AUTH, 'true');
+          window.localStorage.setItem(STORAGE_KEY_AUTH_USER, normalizedHr.username);
         } catch {
           // ignore
         }
-        notify(
-          'success',
-          'Signed in to Demonstration Workspace',
-          `Active session: ${DEMO_CREDENTIALS.username}`
-        );
-        return { ok: true };
+        notify('success', 'Signed in to HR Workspace', `Welcome back, ${normalizedHr.fullName}`);
+        return { ok: true, account: normalizedHr };
       }
-      return {
-        ok: false,
-        error:
-          'Invalid demonstration credentials. Use username "demo.employee" and password "demo.employee".',
+
+      // Find in registered prototype accounts
+      let matched = db.accounts.find((a) => a.username.toLowerCase() === u);
+
+      // Or match dynamically against ER_CANDIDATE by firstname.lastname convention
+      if (!matched) {
+        const candidateMatch = db.candidates.find(
+          (c) => buildPrototypeUsername(c.FULL_NAME) === u
+        );
+        if (candidateMatch) {
+          const empMatch = db.employees.find(
+            (e) => e.CANDIDATE_ID === candidateMatch.CANDIDATE_ID
+          );
+          matched = {
+            username: u,
+            fullName: candidateMatch.FULL_NAME,
+            displayName: candidateMatch.FULL_NAME,
+            role: empMatch ? 'EMPLOYEE' : 'CANDIDATE',
+            candidateId: candidateMatch.CANDIDATE_ID,
+            employeeId: empMatch?.EMPLOYEE_ID,
+          };
+        }
+      }
+
+      if (!matched) {
+        return {
+          ok: false,
+          error:
+            'Account not found in the local prototype directory. New applicants can register a candidate profile first.',
+        };
+      }
+
+      const normalizedAccount: PrototypeAccount = {
+        ...matched,
+        displayName: matched.displayName ?? matched.fullName,
       };
+
+      setCurrentUsername(normalizedAccount.username);
+      try {
+        window.localStorage.setItem(STORAGE_KEY_AUTH_USER, normalizedAccount.username);
+      } catch {
+        // ignore
+      }
+      notify(
+        'success',
+        `Signed in (${normalizedAccount.role} Workspace)`,
+        `Welcome, ${normalizedAccount.fullName}`
+      );
+      return { ok: true, account: normalizedAccount };
     },
-    [notify]
+    [db.accounts, db.candidates, db.employees, notify]
   );
 
   const logout = useCallback(() => {
-    setIsAuthenticated(false);
+    setCurrentUsername(null);
     try {
-      window.localStorage.removeItem(STORAGE_KEY_AUTH);
+      window.localStorage.removeItem(STORAGE_KEY_AUTH_USER);
     } catch {
       // ignore
     }
@@ -285,6 +410,43 @@ export const RecruitmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     [runOperation]
   );
 
+  const registerCandidate = useCallback(
+    (input: RegisterCandidateInput) => {
+      const result = opRegisterCandidateWorkflow(db, input);
+      if (result.ok) {
+        setDb(result.state);
+        if (result.createdUsername) {
+          setCurrentUsername(result.createdUsername);
+          try {
+            window.localStorage.setItem(STORAGE_KEY_AUTH_USER, result.createdUsername);
+          } catch {
+            // ignore
+          }
+        }
+        setLastRefreshedAt(
+          new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          })
+        );
+        if (result.message) {
+          notify('success', result.message);
+        }
+      } else if (result.error) {
+        notify('error', 'Registration Validation Error', result.error);
+      }
+      return result;
+    },
+    [db, notify]
+  );
+
+  const saveCandidateResume = useCallback(
+    (resume: CandidateResumeRecord) =>
+      runOperation((s) => opSaveCandidateResume(s, resume)),
+    [runOperation]
+  );
+
   const createJob = useCallback(
     (input: JobInput) => runOperation((s) => opCreateJob(s, input)),
     [runOperation]
@@ -306,17 +468,23 @@ export const RecruitmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   );
 
   const updateApplicationStatus = useCallback(
-    (applicationId: number, newStatus: string, remarks?: string | null) =>
+    (
+      applicationId: number,
+      newStatus: string,
+      remarks?: string | null,
+      hrNotes?: string | null
+    ) =>
       runOperation((s) =>
         opUpdateApplicationStatus(
           s,
           applicationId,
           newStatus,
-          DEMO_CREDENTIALS.username.toUpperCase(),
-          remarks
+          (currentUser?.username ?? 'HR_ADMIN').toUpperCase(),
+          remarks,
+          hrNotes
         )
       ),
-    [runOperation]
+    [runOperation, currentUser]
   );
 
   const scheduleInterview = useCallback(
@@ -335,10 +503,10 @@ export const RecruitmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       runOperation((s) =>
         opHireCandidate(s, {
           ...input,
-          CHANGED_BY: DEMO_CREDENTIALS.username.toUpperCase(),
+          CHANGED_BY: (currentUser?.username ?? 'HR_ADMIN').toUpperCase(),
         })
       ),
-    [runOperation]
+    [runOperation, currentUser]
   );
 
   const createEmployeeDirect = useCallback(
@@ -349,6 +517,11 @@ export const RecruitmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const updateEmployee = useCallback(
     (employeeId: number, input: UpdateEmployeeInput) =>
       runOperation((s) => opUpdateEmployee(s, employeeId, input)),
+    [runOperation]
+  );
+
+  const deleteEmployee = useCallback(
+    (employeeId: number) => runOperation((s) => opDeleteEmployee(s, employeeId)),
     [runOperation]
   );
 
@@ -425,7 +598,8 @@ export const RecruitmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     toggleTheme,
     setTheme,
     isAuthenticated,
-    demoUser: isAuthenticated ? DEMO_CREDENTIALS : null,
+    currentUser,
+    demoUser: currentUser,
     login,
     logout,
     toasts,
@@ -440,6 +614,8 @@ export const RecruitmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     refreshSummaries,
     addCandidate,
     updateCandidate,
+    registerCandidate,
+    saveCandidateResume,
     createJob,
     updateJob,
     deleteJob,
@@ -450,6 +626,7 @@ export const RecruitmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     hireCandidate,
     createEmployeeDirect,
     updateEmployee,
+    deleteEmployee,
     createDepartment,
     updateDepartment,
     deleteDepartment,

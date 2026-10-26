@@ -5,6 +5,7 @@ import {
   ALLOWED_INTERVIEW_STATUSES,
   ALLOWED_JOB_STATUSES,
   ApplicationStatus,
+  CandidateResumeRecord,
   EmploymentStatus,
   EnrichedEmployee,
   ErApplication,
@@ -20,6 +21,7 @@ import {
   InterviewStatus,
   JobStatus,
   LocalActivityLog,
+  PrototypeAccount,
   RecruitmentDatabaseState,
 } from './schema';
 
@@ -27,22 +29,17 @@ export interface OperationResult<T = RecruitmentDatabaseState> {
   ok: boolean;
   state: T;
   error?: string;
-  errorCode?: number; // Matches Oracle RAISE_APPLICATION_ERROR codes (-20001..-20022) where defined
+  errorCode?: number;
   message?: string;
+  createdUsername?: string;
+  createdCandidateId?: number;
+  createdApplicationId?: number;
 }
 
 export function getTodayIsoDate(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-/**
- * Deterministic sequence generators matching Oracle Sequences:
- * - ER_CANDIDATE_SEQ (START WITH 1012)
- * - ER_APPLICATION_SEQ (START WITH 5012)
- * - ER_INTERVIEW_SEQ (START WITH 1)
- * - ER_EMPLOYEE_SEQ (START WITH 1)
- * - ER_AUDIT_SEQ (START WITH 1)
- */
 export function nextCandidateId(candidates: ErCandidate[]): number {
   const max = candidates.reduce((m, c) => Math.max(m, c.CANDIDATE_ID), 1011);
   return max + 1;
@@ -95,14 +92,58 @@ function createActivity(
 }
 
 /**
+ * Derive standard firstname.lastname username from full name or first/last parts
+ */
+export function buildPrototypeUsername(firstName: string, lastName: string): string {
+  const cleanFirst = (firstName ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+  const cleanLast = (lastName ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+  if (!cleanFirst && !cleanLast) return '';
+  if (!cleanLast) return cleanFirst;
+  return `${cleanFirst}.${cleanLast}`;
+}
+
+/**
+ * Validate PDF Resume File metadata
+ */
+export function validatePdfResumeFile(file: {
+  name: string;
+  size: number;
+  type?: string;
+}): { ok: boolean; error?: string } {
+  const name = (file.name ?? '').trim();
+  if (!name.toLowerCase().endsWith('.pdf')) {
+    return {
+      ok: false,
+      error: 'Invalid file format. Only PDF resume files (.pdf) are accepted.',
+    };
+  }
+  if (file.type && file.type !== 'application/pdf' && file.type !== '') {
+    return {
+      ok: false,
+      error: 'Invalid MIME type. Selected file must be a valid PDF document (application/pdf).',
+    };
+  }
+  if (file.size <= 0) {
+    return { ok: false, error: 'Selected PDF file is empty.' };
+  }
+  const maxBytes = 5 * 1024 * 1024; // 5 MB limit for local browser prototype
+  if (file.size > maxBytes) {
+    return {
+      ok: false,
+      error: 'Resume file exceeds the 5 MB prototype limit. Please select a smaller PDF.',
+    };
+  }
+  return { ok: true };
+}
+
+/**
  * Procedure: ER_ADD_CANDIDATE (Pages 18-19)
- * Enforces:
- * - FULL_NAME NOT NULL (<= 100 chars)
- * - EMAIL UNIQUE NOT NULL (<= 100 chars, valid email format)
- * - PHONE optional (<= 15 chars)
- * - QUALIFICATION optional (<= 100 chars)
- * - EXPERIENCE_YEARS >= 0 (Constraint ER_CAND_EXP_CK)
- * Raises -20001 on duplicate email.
  */
 export interface AddCandidateInput {
   FULL_NAME: string;
@@ -110,6 +151,7 @@ export interface AddCandidateInput {
   PHONE?: string | null;
   QUALIFICATION?: string | null;
   EXPERIENCE_YEARS: number;
+  _skills?: string;
 }
 
 export function addCandidate(
@@ -172,6 +214,22 @@ export function addCandidate(
     EXPERIENCE_YEARS: Math.round(experience * 10) / 10,
     CREATED_DATE: getTodayIsoDate(),
     _origin: 'LOCAL_DEMO',
+    _skills: input._skills?.trim() || undefined,
+  };
+
+  // Also ensure a prototype account exists if not already taken
+  const nameParts = fullName.split(/\s+/);
+  const first = nameParts[0] ?? 'candidate';
+  const last = nameParts.length > 1 ? nameParts[nameParts.length - 1] : String(newId);
+  let baseUsername = buildPrototypeUsername(first, last);
+  if ((state.accounts ?? []).some((a) => a.username === baseUsername)) {
+    baseUsername = `${baseUsername}.${newId}`;
+  }
+  const newAccount: PrototypeAccount = {
+    username: baseUsername,
+    fullName,
+    role: 'CANDIDATE',
+    candidateId: newId,
   };
 
   const activity = createActivity(
@@ -183,10 +241,204 @@ export function addCandidate(
 
   return {
     ok: true,
+    createdCandidateId: newId,
+    createdUsername: baseUsername,
     message: `Candidate added successfully: ${fullName}`,
     state: {
       ...state,
       candidates: [...state.candidates, newCandidate],
+      accounts: [...(state.accounts ?? []), newAccount],
+      activities: [activity, ...state.activities],
+    },
+  };
+}
+
+/**
+ * Complete Candidate Registration + Optional Job Application + PDF Resume Submission
+ */
+export interface RegisterCandidateWorkflowInput {
+  firstName: string;
+  lastName: string;
+  customUsername?: string;
+  email: string;
+  phone?: string | null;
+  qualification?: string | null;
+  experienceYears: number;
+  skills?: string;
+  jobId?: number | null;
+  remarks?: string | null;
+  resume?: {
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+    dataUrl?: string | null;
+  } | null;
+}
+
+export function registerCandidateWorkflow(
+  state: RecruitmentDatabaseState,
+  input: RegisterCandidateWorkflowInput
+): OperationResult {
+  const first = (input.firstName ?? '').trim();
+  const last = (input.lastName ?? '').trim();
+  if (!first || !last) {
+    return {
+      ok: false,
+      state,
+      error: 'Both First Name and Last Name are required to generate your prototype account.',
+    };
+  }
+
+  const desiredUsername = (
+    input.customUsername?.trim() || buildPrototypeUsername(first, last)
+  ).toLowerCase();
+
+  if (!desiredUsername || !/^[a-z0-9]+(\.[a-z0-9]+)+$/.test(desiredUsername)) {
+    return {
+      ok: false,
+      state,
+      error: 'Username must follow the firstname.lastname format (letters, numbers, and dots).',
+    };
+  }
+
+  const accounts = state.accounts ?? [];
+  const usernameTaken = accounts.some((a) => a.username.toLowerCase() === desiredUsername);
+  if (usernameTaken) {
+    return {
+      ok: false,
+      state,
+      error: `The username '${desiredUsername}' is already registered in this prototype. Please specify a distinct username (for example '${desiredUsername}.2').`,
+    };
+  }
+
+  if (input.resume) {
+    const pdfCheck = validatePdfResumeFile({
+      name: input.resume.fileName,
+      size: input.resume.fileSize,
+      type: input.resume.mimeType,
+    });
+    if (!pdfCheck.ok) {
+      return { ok: false, state, error: pdfCheck.error };
+    }
+  }
+
+  const fullName = `${first} ${last}`.trim();
+  const candRes = addCandidate(state, {
+    FULL_NAME: fullName,
+    EMAIL: input.email,
+    PHONE: input.phone,
+    QUALIFICATION: input.qualification,
+    EXPERIENCE_YEARS: input.experienceYears,
+    _skills: input.skills,
+  });
+
+  if (!candRes.ok || !candRes.createdCandidateId) {
+    return candRes;
+  }
+
+  const newCandId = candRes.createdCandidateId;
+  // Override the auto-created account username with the exact validated desiredUsername
+  let nextState: RecruitmentDatabaseState = {
+    ...candRes.state,
+    accounts: candRes.state.accounts.map((acc) =>
+      acc.candidateId === newCandId ? { ...acc, username: desiredUsername, role: 'CANDIDATE' } : acc
+    ),
+  };
+
+  let createdAppId: number | undefined;
+  if (input.jobId) {
+    const appRes = applyForJob(nextState, {
+      CANDIDATE_ID: newCandId,
+      JOB_ID: Number(input.jobId),
+      REMARKS: input.remarks || 'Submitted during candidate registration',
+    });
+    if (!appRes.ok) {
+      return appRes;
+    }
+    nextState = appRes.state;
+    createdAppId =
+      nextState.applications[nextState.applications.length - 1]?.APPLICATION_ID;
+  }
+
+  if (input.resume) {
+    const resumeRecord: CandidateResumeRecord = {
+      CANDIDATE_ID: newCandId,
+      APPLICATION_ID: createdAppId,
+      fileName: input.resume.fileName,
+      fileSize: input.resume.fileSize,
+      mimeType: input.resume.mimeType || 'application/pdf',
+      uploadedAt: new Date().toISOString(),
+      dataUrl: input.resume.dataUrl ?? null,
+    };
+    nextState = {
+      ...nextState,
+      resumes: [
+        ...(nextState.resumes ?? []).filter((r) => r.CANDIDATE_ID !== newCandId),
+        resumeRecord,
+      ],
+    };
+  }
+
+  return {
+    ok: true,
+    state: nextState,
+    createdCandidateId: newCandId,
+    createdApplicationId: createdAppId,
+    createdUsername: desiredUsername,
+    message: `Registration complete for ${fullName}.`,
+  };
+}
+
+/**
+ * Upload or replace a PDF resume for an existing candidate
+ */
+export function saveCandidateResume(
+  state: RecruitmentDatabaseState,
+  candidateId: number,
+  file: {
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+    dataUrl?: string | null;
+    applicationId?: number;
+  }
+): OperationResult {
+  const candidate = state.candidates.find((c) => c.CANDIDATE_ID === candidateId);
+  if (!candidate) {
+    return { ok: false, state, error: `Candidate #${candidateId} does not exist.` };
+  }
+
+  const check = validatePdfResumeFile({
+    name: file.fileName,
+    size: file.fileSize,
+    type: file.mimeType,
+  });
+  if (!check.ok) {
+    return { ok: false, state, error: check.error };
+  }
+
+  const record: CandidateResumeRecord = {
+    CANDIDATE_ID: candidateId,
+    APPLICATION_ID: file.applicationId,
+    fileName: file.fileName,
+    fileSize: file.fileSize,
+    mimeType: 'application/pdf',
+    uploadedAt: new Date().toISOString(),
+    dataUrl: file.dataUrl ?? null,
+  };
+
+  const activity = createActivity(
+    'CANDIDATE',
+    `Resume Uploaded (${candidate.FULL_NAME})`,
+    `Local PDF resume '${file.fileName}' (${Math.round(file.fileSize / 1024)} KB) attached for HR review.`
+  );
+
+  return {
+    ok: true,
+    message: `PDF resume '${file.fileName}' saved in local prototype state.`,
+    state: {
+      ...state,
+      resumes: [...(state.resumes ?? []).filter((r) => r.CANDIDATE_ID !== candidateId), record],
       activities: [activity, ...state.activities],
     },
   };
@@ -243,6 +495,7 @@ export function updateCandidate(
     PHONE: phone,
     QUALIFICATION: qualification,
     EXPERIENCE_YEARS: Math.round(experience * 10) / 10,
+    _skills: input._skills !== undefined ? input._skills.trim() : existing._skills,
   };
 
   const activity = createActivity(
@@ -258,6 +511,9 @@ export function updateCandidate(
     state: {
       ...state,
       candidates: state.candidates.map((c) => (c.CANDIDATE_ID === candidateId ? updated : c)),
+      accounts: (state.accounts ?? []).map((a) =>
+        a.candidateId === candidateId ? { ...a, fullName } : a
+      ),
       activities: [activity, ...state.activities],
     },
   };
@@ -265,11 +521,6 @@ export function updateCandidate(
 
 /**
  * Create or Update Job (ER_JOB)
- * Constraints:
- * - ER_JOB_DEPT_FK: valid DEPT_ID
- * - ER_JOB_SALARY_CK: MIN_SALARY IS NULL OR MAX_SALARY IS NULL OR MIN_SALARY <= MAX_SALARY
- * - ER_JOB_VACANCY_CK: VACANCIES >= 0
- * - ER_JOB_STATUS_CK: JOB_STATUS IN ('OPEN', 'CLOSED', 'ON HOLD')
  */
 export interface JobInput {
   JOB_TITLE: string;
@@ -485,11 +736,6 @@ export function deleteJob(state: RecruitmentDatabaseState, jobId: number): Opera
 
 /**
  * Procedure: ER_APPLY_FOR_JOB (Pages 20-22)
- * Enforces:
- * - P_CANDIDATE_ID exists (ORA-20003 if missing)
- * - P_JOB_ID exists (ORA-20003 if missing)
- * - Unique (CANDIDATE_ID, JOB_ID) (Constraint ER_APP_UNQ -> ORA-20002)
- * - Sets APPLICATION_STATUS = 'APPLIED', APPLICATION_DATE = SYSDATE
  */
 export interface ApplyForJobInput {
   CANDIDATE_ID: number;
@@ -562,6 +808,7 @@ export function applyForJob(
 
   return {
     ok: true,
+    createdApplicationId: newAppId,
     message: 'Application submitted successfully.',
     state: {
       ...state,
@@ -573,18 +820,14 @@ export function applyForJob(
 
 /**
  * Procedure: ER_UPDATE_STATUS (Pages 22-23) + Trigger: ER_APP_STATUS_AUDIT (Pages 15-16)
- * Enforces:
- * - Application exists (ORA-20004 if missing)
- * - Status in ('APPLIED', 'SHORTLISTED', 'INTERVIEW', 'SELECTED', 'REJECTED', 'HIRED')
- * - When OLD.APPLICATION_STATUS <> NEW.APPLICATION_STATUS, inserts a row into ER_APPLICATION_AUDIT
- * - Does not create duplicate audit entry if status is unchanged.
  */
 export function updateApplicationStatus(
   state: RecruitmentDatabaseState,
   applicationId: number,
   newStatusInput: string,
-  changedBy = 'DEMO_USER',
-  remarks?: string | null
+  changedBy = 'HR_ADMIN',
+  remarks?: string | null,
+  hrNotes?: string | null
 ): OperationResult {
   const upperStatus = (newStatusInput ?? '').trim().toUpperCase() as ApplicationStatus;
   if (!ALLOWED_APPLICATION_STATUSES.includes(upperStatus)) {
@@ -606,6 +849,25 @@ export function updateApplicationStatus(
   }
 
   if (app.APPLICATION_STATUS === upperStatus) {
+    // If only HR notes or remarks were updated without changing status, allow saving notes without a duplicate audit row
+    if (hrNotes !== undefined && hrNotes !== app._hrNotes) {
+      const updatedWithNotes: ErApplication = {
+        ...app,
+        REMARKS: remarks !== undefined && remarks !== null ? remarks.trim() : app.REMARKS,
+        _hrNotes: hrNotes.trim(),
+      };
+      return {
+        ok: true,
+        message: `Saved internal HR review notes for Application #${applicationId}.`,
+        state: {
+          ...state,
+          applications: state.applications.map((a) =>
+            a.APPLICATION_ID === applicationId ? updatedWithNotes : a
+          ),
+        },
+      };
+    }
+
     return {
       ok: false,
       state,
@@ -618,6 +880,7 @@ export function updateApplicationStatus(
     ...app,
     APPLICATION_STATUS: upperStatus,
     REMARKS: remarks !== undefined && remarks !== null ? remarks.trim() : app.REMARKS,
+    _hrNotes: hrNotes !== undefined && hrNotes !== null ? hrNotes.trim() : app._hrNotes,
   };
 
   const newAuditId = nextAuditId(state.audits);
@@ -654,12 +917,6 @@ export function updateApplicationStatus(
 
 /**
  * Procedure: ER_SCHEDULE_INTERVIEW (Pages 25-31)
- * Enforces:
- * - APPLICATION_ID exists
- * - INTERVIEW_ROUND is a positive integer
- * - UNIQUE (APPLICATION_ID, INTERVIEW_ROUND) -> ORA-20010 on duplicate
- * - INTERVIEW_MODE IN ('ONLINE', 'OFFLINE')
- * - INTERVIEW_DATE valid
  */
 export interface ScheduleInterviewInput {
   APPLICATION_ID: number;
@@ -764,9 +1021,6 @@ export function scheduleInterview(
 
 /**
  * Update Interview Feedback, Score & Status
- * Enforces:
- * - SCORE IS NULL OR SCORE BETWEEN 0 AND 100 (Constraint ER_INT_SCORE_CK)
- * - INTERVIEW_STATUS IN ('SCHEDULED', 'COMPLETED', 'CANCELLED') (Constraint ER_INT_STATUS_CK)
  */
 export interface UpdateInterviewFeedbackInput {
   SCORE?: number | null | string;
@@ -819,7 +1073,9 @@ export function updateInterviewFeedback(
     SCORE: parsedScore,
     FEEDBACK: feedback,
     INTERVIEW_STATUS: status,
-    INTERVIEWER_NAME: input.INTERVIEWER_NAME ? input.INTERVIEWER_NAME.trim() : existing.INTERVIEWER_NAME,
+    INTERVIEWER_NAME: input.INTERVIEWER_NAME
+      ? input.INTERVIEWER_NAME.trim()
+      : existing.INTERVIEWER_NAME,
     INTERVIEW_DATE: input.INTERVIEW_DATE || existing.INTERVIEW_DATE,
     INTERVIEW_MODE: input.INTERVIEW_MODE || existing.INTERVIEW_MODE,
   };
@@ -843,15 +1099,6 @@ export function updateInterviewFeedback(
 
 /**
  * Procedure: ER_HIRE_CANDIDATE (Pages 34-36)
- * Atomic local transaction that:
- * 1. Verifies APPLICATION_ID exists (ORA-20022 if not found)
- * 2. Verifies APPLICATION_STATUS is not already 'HIRED' (ORA-20020)
- * 3. Verifies no employee record exists for APPLICATION_ID (ORA-20021)
- * 4. Verifies no employee record exists for CANDIDATE_ID (Unique constraint on ER_EMPLOYEE.CANDIDATE_ID)
- * 5. Validates DESIGNATION and ANNUAL_SALARY
- * 6. Updates ER_APPLICATION.APPLICATION_STATUS = 'HIRED'
- * 7. Inserts ER_APPLICATION_AUDIT entry (simulating trigger ER_APP_STATUS_AUDIT)
- * 8. Inserts ER_EMPLOYEE record with EMPLOYMENT_STATUS = 'ACTIVE' and JOINING_DATE
  */
 export interface HireCandidateInput {
   APPLICATION_ID: number;
@@ -869,7 +1116,7 @@ export function hireCandidate(
   const designation = (input.DESIGNATION ?? '').trim();
   const salary = Number(input.ANNUAL_SALARY);
   const joiningDate = input.JOINING_DATE?.trim() || getTodayIsoDate();
-  const changedBy = input.CHANGED_BY || 'DEMO_USER';
+  const changedBy = input.CHANGED_BY || 'HR_ADMIN';
 
   const app = state.applications.find((a) => a.APPLICATION_ID === appId);
   if (!app) {
@@ -933,7 +1180,6 @@ export function hireCandidate(
     };
   }
 
-  // Atomic updates
   const oldStatus = app.APPLICATION_STATUS;
   const updatedApp: ErApplication = {
     ...app,
@@ -971,6 +1217,13 @@ export function hireCandidate(
     `EXEC ER_HIRE_CANDIDATE(${appId}, '${designation}', ${newEmployee.ANNUAL_SALARY});`
   );
 
+  // Upgrade the candidate's prototype account role to EMPLOYEE (unless already HR)
+  const updatedAccounts = (state.accounts ?? []).map((acc) =>
+    acc.candidateId === app.CANDIDATE_ID && acc.role !== 'HR'
+      ? { ...acc, role: 'EMPLOYEE' as const, employeeId: newEmpId }
+      : acc
+  );
+
   return {
     ok: true,
     message: `Candidate hired successfully. Candidate ID: ${app.CANDIDATE_ID}`,
@@ -979,18 +1232,14 @@ export function hireCandidate(
       applications: state.applications.map((a) => (a.APPLICATION_ID === appId ? updatedApp : a)),
       employees: [...state.employees, newEmployee],
       audits: [...state.audits, newAudit],
+      accounts: updatedAccounts,
       activities: [activity, ...state.activities],
     },
   };
 }
 
 /**
- * Direct Employee Creation (Part XVI.16.2 & 16.3)
- * Enforces:
- * - Valid APPLICATION_ID and CANDIDATE_ID that belong together
- * - Unique APPLICATION_ID and CANDIDATE_ID within ER_EMPLOYEE
- * - Valid DESIGNATION, JOINING_DATE, ANNUAL_SALARY, EMPLOYMENT_STATUS
- * - Does NOT automatically change APPLICATION_STATUS unless invoked via hireCandidate
+ * Direct Employee Creation
  */
 export interface CreateEmployeeInput {
   APPLICATION_ID: number;
@@ -1070,6 +1319,12 @@ export function createEmployeeDirect(
     _origin: 'LOCAL_DEMO',
   };
 
+  const updatedAccounts = (state.accounts ?? []).map((acc) =>
+    acc.candidateId === candId && acc.role !== 'HR'
+      ? { ...acc, role: 'EMPLOYEE' as const, employeeId: newEmpId }
+      : acc
+  );
+
   const activity = createActivity(
     'EMPLOYEE',
     `Employee Record Created (#${newEmpId})`,
@@ -1082,16 +1337,25 @@ export function createEmployeeDirect(
     state: {
       ...state,
       employees: [...state.employees, newEmployee],
+      accounts: updatedAccounts,
       activities: [activity, ...state.activities],
     },
   };
 }
 
+/**
+ * Enhanced HR Employee Editing:
+ * Allows HR to change Designation, Joining Date, Annual Salary, Employment Status,
+ * Department assignment (DEPT_ID), Phone, and Qualification.
+ */
 export interface UpdateEmployeeInput {
   DESIGNATION: string;
   JOINING_DATE: string;
   ANNUAL_SALARY: number;
   EMPLOYMENT_STATUS: EmploymentStatus;
+  DEPT_ID?: number;
+  PHONE?: string | null;
+  QUALIFICATION?: string | null;
 }
 
 export function updateEmployee(
@@ -1126,26 +1390,90 @@ export function updateEmployee(
     };
   }
 
+  let deptOverride = existing._deptIdOverride;
+  if (input.DEPT_ID !== undefined && input.DEPT_ID !== null) {
+    const deptIdNum = Number(input.DEPT_ID);
+    const validDept = state.departments.find((d) => d.DEPT_ID === deptIdNum);
+    if (!validDept) {
+      return { ok: false, state, error: 'Selected department does not exist.' };
+    }
+    deptOverride = deptIdNum;
+  }
+
   const updated: ErEmployee = {
     ...existing,
     DESIGNATION: designation,
     JOINING_DATE: joiningDate,
     ANNUAL_SALARY: Math.round(salary * 100) / 100,
     EMPLOYMENT_STATUS: status,
+    _deptIdOverride: deptOverride,
   };
+
+  // Also update linked candidate's PHONE / QUALIFICATION if provided by HR
+  let nextCandidates = state.candidates;
+  if (input.PHONE !== undefined || input.QUALIFICATION !== undefined) {
+    nextCandidates = state.candidates.map((c) => {
+      if (c.CANDIDATE_ID !== existing.CANDIDATE_ID) return c;
+      return {
+        ...c,
+        PHONE: input.PHONE !== undefined ? (input.PHONE ? input.PHONE.trim() : null) : c.PHONE,
+        QUALIFICATION:
+          input.QUALIFICATION !== undefined
+            ? input.QUALIFICATION
+              ? input.QUALIFICATION.trim()
+              : null
+            : c.QUALIFICATION,
+      };
+    });
+  }
+
+  const deptName =
+    deptOverride !== undefined
+      ? state.departments.find((d) => d.DEPT_ID === deptOverride)?.DEPT_NAME
+      : undefined;
 
   const activity = createActivity(
     'EMPLOYEE',
-    `Employee #${employeeId} Updated`,
-    `Updated ${designation} — Status: ${status}, Annual Salary: ₹${updated.ANNUAL_SALARY.toLocaleString('en-IN')}.`
+    `Employee #${employeeId} Updated by HR`,
+    `Updated ${designation}${deptName ? ` (${deptName})` : ''} — Status: ${status}, Annual Salary: ₹${updated.ANNUAL_SALARY.toLocaleString('en-IN')}.`
   );
 
   return {
     ok: true,
-    message: `Employee #${employeeId} updated successfully.`,
+    message: `Employee #${employeeId} details updated successfully.`,
     state: {
       ...state,
       employees: state.employees.map((e) => (e.EMPLOYEE_ID === employeeId ? updated : e)),
+      candidates: nextCandidates,
+      activities: [activity, ...state.activities],
+    },
+  };
+}
+
+/**
+ * Remove Employee Record (with confirmation in UI)
+ */
+export function deleteEmployee(
+  state: RecruitmentDatabaseState,
+  employeeId: number
+): OperationResult {
+  const existing = state.employees.find((e) => e.EMPLOYEE_ID === employeeId);
+  if (!existing) {
+    return { ok: false, state, error: `Employee #${employeeId} not found.` };
+  }
+
+  const activity = createActivity(
+    'EMPLOYEE',
+    `Employee #${employeeId} Removed`,
+    `Removed local employee record #${employeeId} (${existing.DESIGNATION}).`
+  );
+
+  return {
+    ok: true,
+    message: `Employee #${employeeId} removed from local prototype state.`,
+    state: {
+      ...state,
+      employees: state.employees.filter((e) => e.EMPLOYEE_ID !== employeeId),
       activities: [activity, ...state.activities],
     },
   };
@@ -1153,7 +1481,6 @@ export function updateEmployee(
 
 /**
  * Department Operations (ER_DEPARTMENT)
- * Enforces unique DEPT_NAME (<= 50 chars) and blocks deletion of referenced departments.
  */
 export function createDepartment(
   state: RecruitmentDatabaseState,
@@ -1278,10 +1605,6 @@ export function deleteDepartment(
 }
 
 /**
- * View Selectors & Derived Queries matching MiniProject Code.pdf
- */
-
-/**
  * Matches CREATE OR REPLACE VIEW ER_V_CANDIDATE_APPLICATION (Page 12)
  */
 export function selectCandidateApplicationView(
@@ -1290,6 +1613,9 @@ export function selectCandidateApplicationView(
   const candMap = new Map(state.candidates.map((c) => [c.CANDIDATE_ID, c]));
   const jobMap = new Map(state.jobs.map((j) => [j.JOB_ID, j]));
   const deptMap = new Map(state.departments.map((d) => [d.DEPT_ID, d]));
+  const resumeByCand = new Map(
+    (state.resumes ?? []).map((r) => [r.CANDIDATE_ID, r])
+  );
 
   const rows: ErVCandidateApplication[] = [];
   for (const app of state.applications) {
@@ -1314,6 +1640,8 @@ export function selectCandidateApplicationView(
       JOB_TITLE: j.JOB_TITLE,
       DEPT_ID: d.DEPT_ID,
       DEPT_NAME: d.DEPT_NAME,
+      _hrNotes: app._hrNotes ?? null,
+      _resume: resumeByCand.get(c.CANDIDATE_ID) ?? null,
     });
   }
 
@@ -1366,6 +1694,7 @@ export function selectInterviewDetailsView(
 
 /**
  * Enriched Employees selector joining ER_EMPLOYEE -> ER_APPLICATION -> ER_CANDIDATE -> ER_JOB -> ER_DEPARTMENT
+ * Respects HR department override (_deptIdOverride) when HR reassigns an employee's department.
  */
 export function selectEnrichedEmployees(state: RecruitmentDatabaseState): EnrichedEmployee[] {
   const appMap = new Map(state.applications.map((a) => [a.APPLICATION_ID, a]));
@@ -1378,7 +1707,8 @@ export function selectEnrichedEmployees(state: RecruitmentDatabaseState): Enrich
     const app = appMap.get(emp.APPLICATION_ID);
     const cand = candMap.get(emp.CANDIDATE_ID);
     const job = app ? jobMap.get(app.JOB_ID) : undefined;
-    const dept = job ? deptMap.get(job.DEPT_ID) : undefined;
+    const effectiveDeptId = emp._deptIdOverride ?? job?.DEPT_ID ?? 0;
+    const dept = deptMap.get(effectiveDeptId);
 
     rows.push({
       ...emp,
@@ -1390,7 +1720,7 @@ export function selectEnrichedEmployees(state: RecruitmentDatabaseState): Enrich
       APPLICATION_STATUS: app?.APPLICATION_STATUS ?? 'HIRED',
       JOB_ID: job?.JOB_ID ?? 0,
       JOB_TITLE: job?.JOB_TITLE ?? 'Unassigned',
-      DEPT_ID: dept?.DEPT_ID ?? 0,
+      DEPT_ID: effectiveDeptId,
       DEPT_NAME: dept?.DEPT_NAME ?? 'Unassigned',
     });
   }
@@ -1398,13 +1728,6 @@ export function selectEnrichedEmployees(state: RecruitmentDatabaseState): Enrich
   return rows.sort((a, b) => a.EMPLOYEE_ID - b.EMPLOYEE_ID);
 }
 
-/**
- * Matches the SQL query on Pages 38-39:
- * SELECT D.DEPT_NAME, COUNT(J.JOB_ID) AS TOTAL_JOBS, NVL(SUM(J.VACANCIES), 0) AS TOTAL_VACANCIES
- * FROM ER_DEPARTMENT D
- * LEFT JOIN ER_JOB J ON D.DEPT_ID = J.DEPT_ID AND J.JOB_STATUS = 'OPEN'
- * GROUP BY D.DEPT_ID, D.DEPT_NAME ORDER BY D.DEPT_NAME;
- */
 export interface DepartmentVacancySummary {
   DEPT_ID: number;
   DEPT_NAME: string;
@@ -1442,17 +1765,6 @@ export function selectDepartmentSummaries(
     .sort((a, b) => a.DEPT_NAME.localeCompare(b.DEPT_NAME));
 }
 
-/**
- * Dashboard Summary Metrics (Part X.10.1)
- * Explicit rules:
- * - totalCandidates: count of ER_CANDIDATE records
- * - totalApplications: count of ER_APPLICATION records
- * - openJobs: count of ER_JOB records where JOB_STATUS === 'OPEN'
- * - openVacancies: sum of VACANCIES for ER_JOB records where JOB_STATUS === 'OPEN'
- * - interviewsScheduled: count of ER_INTERVIEW records where INTERVIEW_STATUS === 'SCHEDULED'
- * - totalEmployees: count of ER_EMPLOYEE records
- * - applicationsAwaitingReview: count of ER_APPLICATION records where APPLICATION_STATUS === 'APPLIED' or 'SHORTLISTED'
- */
 export interface DashboardMetrics {
   totalCandidates: number;
   totalApplications: number;
@@ -1461,6 +1773,8 @@ export interface DashboardMetrics {
   interviewsScheduled: number;
   totalEmployees: number;
   applicationsAwaitingReview: number;
+  resumesSubmitted: number;
+  hiredApplicationsCount: number;
 }
 
 export function calculateDashboardMetrics(state: RecruitmentDatabaseState): DashboardMetrics {
@@ -1475,13 +1789,12 @@ export function calculateDashboardMetrics(state: RecruitmentDatabaseState): Dash
     applicationsAwaitingReview: state.applications.filter(
       (a) => a.APPLICATION_STATUS === 'APPLIED' || a.APPLICATION_STATUS === 'SHORTLISTED'
     ).length,
+    resumesSubmitted: (state.resumes ?? []).length,
+    hiredApplicationsCount: state.applications.filter((a) => a.APPLICATION_STATUS === 'HIRED')
+      .length,
   };
 }
 
-/**
- * CSV Formatting Utility (Part XIX.19.2)
- * Handles commas, double quotes, and line breaks per RFC 4180.
- */
 export function generateCsvContent(
   headers: string[],
   rows: (string | number | null | undefined)[][]

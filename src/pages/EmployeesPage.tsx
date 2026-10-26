@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import {
+  AlertTriangle,
   ArrowUpDown,
   Edit3,
   Eye,
   Plus,
   Search,
+  Trash2,
   UserCheck,
 } from 'lucide-react';
 import { CsvExportButton, Modal, StatusIndicator, formatInrSalary } from '../components/ui';
@@ -23,6 +25,7 @@ export const EmployeesPage: React.FC = () => {
     enrichedEmployees,
     createEmployeeDirect,
     updateEmployee,
+    deleteEmployee,
     notify,
   } = useRecruitment();
 
@@ -30,7 +33,9 @@ export const EmployeesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [deptFilter, setDeptFilter] = useState('ALL');
-  const [sortBy, setSortBy] = useState<'EMPLOYEE_ID' | 'JOINING_DATE' | 'ANNUAL_SALARY' | 'DESIGNATION'>('EMPLOYEE_ID');
+  const [sortBy, setSortBy] = useState<
+    'EMPLOYEE_ID' | 'JOINING_DATE' | 'ANNUAL_SALARY' | 'DESIGNATION'
+  >('EMPLOYEE_ID');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   // Create Employee Modal (Part XVI.16.2)
@@ -42,13 +47,19 @@ export const EmployeesPage: React.FC = () => {
   const [createStatus, setCreateStatus] = useState<EmploymentStatus>('ACTIVE');
   const [createError, setCreateError] = useState<string | null>(null);
 
-  // Edit Employee Modal (Part XVI.16.4)
+  // Edit Employee Modal (HR has full rights to edit Salary, Department, Designation, Joining Date, Status, Phone, Qualification)
   const [editingEmployee, setEditingEmployee] = useState<EnrichedEmployee | null>(null);
   const [editDesignation, setEditDesignation] = useState('');
+  const [editDeptId, setEditDeptId] = useState('');
   const [editJoiningDate, setEditJoiningDate] = useState('');
   const [editSalary, setEditSalary] = useState('');
   const [editStatus, setEditStatus] = useState<EmploymentStatus>('ACTIVE');
+  const [editPhone, setEditPhone] = useState('');
+  const [editQualification, setEditQualification] = useState('');
   const [editError, setEditError] = useState<string | null>(null);
+
+  // Delete Employee Confirmation Modal
+  const [deletingEmployee, setDeletingEmployee] = useState<EnrichedEmployee | null>(null);
 
   // Employee Details Profile Modal (Part XVI.16.5)
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
@@ -60,7 +71,8 @@ export const EmployeesPage: React.FC = () => {
         const matchId = String(emp.EMPLOYEE_ID).includes(q);
         const matchName = emp.FULL_NAME.toLowerCase().includes(q);
         const matchDesig = emp.DESIGNATION.toLowerCase().includes(q);
-        if (!matchId && !matchName && !matchDesig) return false;
+        const matchDept = emp.DEPT_NAME.toLowerCase().includes(q);
+        if (!matchId && !matchName && !matchDesig && !matchDept) return false;
       }
       if (statusFilter !== 'ALL' && emp.EMPLOYMENT_STATUS !== statusFilter) return false;
       if (deptFilter !== 'ALL' && emp.DEPT_ID !== Number(deptFilter)) return false;
@@ -146,9 +158,12 @@ export const EmployeesPage: React.FC = () => {
   const openEditModal = (emp: EnrichedEmployee) => {
     setEditingEmployee(emp);
     setEditDesignation(emp.DESIGNATION);
+    setEditDeptId(String(emp.DEPT_ID));
     setEditJoiningDate(emp.JOINING_DATE);
     setEditSalary(String(emp.ANNUAL_SALARY));
     setEditStatus(emp.EMPLOYMENT_STATUS);
+    setEditPhone(emp.PHONE ?? '');
+    setEditQualification(emp.QUALIFICATION ?? '');
     setEditError(null);
   };
 
@@ -159,9 +174,12 @@ export const EmployeesPage: React.FC = () => {
 
     const res = updateEmployee(editingEmployee.EMPLOYEE_ID, {
       DESIGNATION: editDesignation,
+      DEPT_ID: Number(editDeptId),
       JOINING_DATE: editJoiningDate,
       ANNUAL_SALARY: Number(editSalary),
       EMPLOYMENT_STATUS: editStatus,
+      PHONE: editPhone,
+      QUALIFICATION: editQualification,
     });
 
     if (!res.ok) {
@@ -169,6 +187,17 @@ export const EmployeesPage: React.FC = () => {
       return;
     }
     setEditingEmployee(null);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deletingEmployee) return;
+    const res = deleteEmployee(deletingEmployee.EMPLOYEE_ID);
+    if (res.ok) {
+      if (selectedEmployeeId === deletingEmployee.EMPLOYEE_ID) {
+        setSelectedEmployeeId(null);
+      }
+      setDeletingEmployee(null);
+    }
   };
 
   const selectedEmployee = useMemo(
@@ -185,8 +214,8 @@ export const EmployeesPage: React.FC = () => {
             <Search className="w-4 h-4 text-[var(--text-secondary)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="search"
-              aria-label="Search employees by ID, candidate name, or designation"
-              placeholder="Search by employee ID, candidate name, or designation..."
+              aria-label="Search employees by ID, candidate name, designation, or department"
+              placeholder="Search by employee ID, employee name, designation, or department..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input-field !pl-9"
@@ -254,7 +283,7 @@ export const EmployeesPage: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <label htmlFor="emp-dept-filter" className="text-[var(--text-secondary)] font-medium">
-                Department (Linked):
+                Department:
               </label>
               <select
                 id="emp-dept-filter"
@@ -343,15 +372,15 @@ export const EmployeesPage: React.FC = () => {
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-[var(--border-subtle)] bg-[var(--surface-secondary)]/60 text-[var(--text-secondary)] font-semibold">
-                  <th className="py-3.5 px-4 font-mono-tabular">EMPLOYEE_ID</th>
-                  <th className="py-3.5 px-4">CANDIDATE NAME</th>
-                  <th className="py-3.5 px-4 font-mono-tabular">APPLICATION_ID</th>
-                  <th className="py-3.5 px-4">DESIGNATION</th>
-                  <th className="py-3.5 px-4">LINKED JOB & DEPT</th>
-                  <th className="py-3.5 px-4 font-mono-tabular">JOINING_DATE</th>
-                  <th className="py-3.5 px-4 font-mono-tabular text-right">ANNUAL_SALARY</th>
-                  <th className="py-3.5 px-4">EMPLOYMENT_STATUS</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+                  <th className="py-3 px-3 font-mono-tabular">EMP_ID</th>
+                  <th className="py-3 px-3">EMPLOYEE NAME</th>
+                  <th className="py-3 px-3 font-mono-tabular">APP_ID</th>
+                  <th className="py-3 px-3">DESIGNATION</th>
+                  <th className="py-3 px-3">DEPARTMENT</th>
+                  <th className="py-3 px-3 font-mono-tabular">JOINING_DATE</th>
+                  <th className="py-3 px-3 font-mono-tabular text-right">ANNUAL_SALARY</th>
+                  <th className="py-3 px-3">STATUS</th>
+                  <th className="py-3 px-3 text-right">HR Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-subtle)]">
@@ -360,10 +389,10 @@ export const EmployeesPage: React.FC = () => {
                     key={emp.EMPLOYEE_ID}
                     className="hover:bg-[var(--surface-secondary)]/40 transition-colors"
                   >
-                    <td className="py-3 px-4 font-mono-tabular font-semibold text-[var(--brand-primary)]">
+                    <td className="py-3 px-3 font-mono-tabular font-semibold text-[var(--brand-primary)]">
                       #{emp.EMPLOYEE_ID}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-3">
                       <button
                         type="button"
                         onClick={() => setSelectedEmployeeId(emp.EMPLOYEE_ID)}
@@ -375,41 +404,54 @@ export const EmployeesPage: React.FC = () => {
                         Cand #{emp.CANDIDATE_ID} · {emp.EMAIL}
                       </div>
                     </td>
-                    <td className="py-3 px-4 font-mono-tabular">#{emp.APPLICATION_ID}</td>
-                    <td className="py-3 px-4 font-semibold text-[var(--text-primary)]">
+                    <td className="py-3 px-3 font-mono-tabular">#{emp.APPLICATION_ID}</td>
+                    <td className="py-3 px-3 font-semibold text-[var(--text-primary)]">
                       {emp.DESIGNATION}
                     </td>
-                    <td className="py-3 px-4 text-[var(--text-secondary)]">
-                      <div>{emp.JOB_TITLE}</div>
-                      <div className="text-[11px]">{emp.DEPT_NAME}</div>
+                    <td className="py-3 px-3 text-[var(--text-primary)]">
+                      <div className="font-semibold">{emp.DEPT_NAME}</div>
+                      <div className="text-[11px] text-[var(--text-secondary)]">
+                        Job: {emp.JOB_TITLE}
+                      </div>
                     </td>
-                    <td className="py-3 px-4 font-mono-tabular text-[var(--text-secondary)]">
+                    <td className="py-3 px-3 font-mono-tabular text-[var(--text-secondary)] whitespace-nowrap">
                       {emp.JOINING_DATE}
                     </td>
-                    <td className="py-3 px-4 font-mono-tabular text-right font-semibold">
+                    <td className="py-3 px-3 font-mono-tabular text-right font-semibold whitespace-nowrap">
                       {formatInrSalary(emp.ANNUAL_SALARY)}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-3">
                       <StatusIndicator status={emp.EMPLOYMENT_STATUS} />
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-3 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => setSelectedEmployeeId(emp.EMPLOYEE_ID)}
                           aria-label={`View profile for Employee #${emp.EMPLOYEE_ID}`}
-                          className="btn-base btn-secondary !py-1 !px-2.5 text-xs"
+                          className="btn-base btn-secondary !py-1 !px-2 text-xs"
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          <span>Details</span>
+                          <span>Profile</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => openEditModal(emp)}
                           aria-label={`Edit Employee #${emp.EMPLOYEE_ID}`}
-                          className="btn-base btn-tertiary !p-1.5"
+                          title="Edit salary, department, designation, joining date, or status"
+                          className="btn-base btn-secondary !py-1 !px-2 text-xs"
                         >
-                          <Edit3 className="w-3.5 h-3.5" />
+                          <Edit3 className="w-3.5 h-3.5 text-[var(--brand-primary)]" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletingEmployee(emp)}
+                          aria-label={`Remove Employee #${emp.EMPLOYEE_ID}`}
+                          title="Remove employee record"
+                          className="btn-base btn-tertiary !p-1.5 text-[var(--danger)]"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -570,64 +612,72 @@ export const EmployeesPage: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Edit Employee Modal */}
+      {/* Edit Employee Modal (HR Can Change Salary, Department, Designation, Joining Date, Employment Status, Phone & Qualification) */}
       <Modal
         isOpen={editingEmployee !== null}
         onClose={() => setEditingEmployee(null)}
         title={
           editingEmployee
-            ? `Edit Employee #${editingEmployee.EMPLOYEE_ID} (${editingEmployee.FULL_NAME})`
-            : 'Edit Employee'
+            ? `HR Edit Employee #${editingEmployee.EMPLOYEE_ID} · ${editingEmployee.FULL_NAME}`
+            : 'Edit Employee Details'
         }
-        subtitle="Updates DESIGNATION, JOINING_DATE, ANNUAL_SALARY, or EMPLOYMENT_STATUS ('ACTIVE' / 'INACTIVE') while preserving foreign key references."
+        subtitle="HR can update Annual Salary, Department, Designation, Joining Date, Contact Phone, Qualification, and Employment Status ('ACTIVE' / 'INACTIVE')."
+        maxWidthClass="max-w-xl"
       >
         {editingEmployee && (
           <form onSubmit={handleEditSubmit} className="space-y-4" noValidate>
             <div className="surface-inset rounded-xl p-3.5 text-xs space-y-1">
               <div className="font-semibold text-[var(--text-primary)]">
-                Immutable Foreign Keys: APPLICATION_ID #{editingEmployee.APPLICATION_ID} ·
+                Verified Foreign Keys: APPLICATION_ID #{editingEmployee.APPLICATION_ID} ·
                 CANDIDATE_ID #{editingEmployee.CANDIDATE_ID}
               </div>
               <div className="text-[var(--text-secondary)]">
-                Candidate: {editingEmployee.FULL_NAME} ({editingEmployee.EMAIL})
+                Employee: {editingEmployee.FULL_NAME} ({editingEmployee.EMAIL})
               </div>
             </div>
 
-            <div>
-              <label
-                htmlFor="edit-emp-designation"
-                className="block text-xs font-semibold text-[var(--text-primary)] mb-1"
-              >
-                Designation (DESIGNATION) *
-              </label>
-              <input
-                id="edit-emp-designation"
-                type="text"
-                value={editDesignation}
-                onChange={(e) => setEditDesignation(e.target.value)}
-                className="input-field"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label
-                  htmlFor="edit-emp-date"
+                  htmlFor="edit-emp-designation"
                   className="block text-xs font-semibold text-[var(--text-primary)] mb-1"
                 >
-                  Joining Date *
+                  Designation (DESIGNATION) *
                 </label>
                 <input
-                  id="edit-emp-date"
-                  type="date"
-                  value={editJoiningDate}
-                  onChange={(e) => setEditJoiningDate(e.target.value)}
-                  className="input-field font-mono-tabular"
+                  id="edit-emp-designation"
+                  type="text"
+                  value={editDesignation}
+                  onChange={(e) => setEditDesignation(e.target.value)}
+                  className="input-field"
                   required
                 />
               </div>
 
+              <div>
+                <label
+                  htmlFor="edit-emp-dept"
+                  className="block text-xs font-semibold text-[var(--text-primary)] mb-1"
+                >
+                  Department (ER_DEPARTMENT) *
+                </label>
+                <select
+                  id="edit-emp-dept"
+                  value={editDeptId}
+                  onChange={(e) => setEditDeptId(e.target.value)}
+                  className="input-field"
+                  required
+                >
+                  {db.departments.map((d) => (
+                    <option key={d.DEPT_ID} value={String(d.DEPT_ID)}>
+                      #{d.DEPT_ID} · {d.DEPT_NAME}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label
                   htmlFor="edit-emp-salary"
@@ -642,6 +692,23 @@ export const EmployeesPage: React.FC = () => {
                   step="10000"
                   value={editSalary}
                   onChange={(e) => setEditSalary(e.target.value)}
+                  className="input-field font-mono-tabular"
+                  required
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-emp-date"
+                  className="block text-xs font-semibold text-[var(--text-primary)] mb-1"
+                >
+                  Joining Date *
+                </label>
+                <input
+                  id="edit-emp-date"
+                  type="date"
+                  value={editJoiningDate}
+                  onChange={(e) => setEditJoiningDate(e.target.value)}
                   className="input-field font-mono-tabular"
                   required
                 />
@@ -669,6 +736,40 @@ export const EmployeesPage: React.FC = () => {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[var(--border-subtle)]">
+              <div>
+                <label
+                  htmlFor="edit-emp-phone"
+                  className="block text-xs font-semibold text-[var(--text-primary)] mb-1"
+                >
+                  Contact Phone (Linked ER_CANDIDATE.PHONE)
+                </label>
+                <input
+                  id="edit-emp-phone"
+                  type="tel"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="input-field font-mono-tabular"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-emp-qualification"
+                  className="block text-xs font-semibold text-[var(--text-primary)] mb-1"
+                >
+                  Qualification (Linked ER_CANDIDATE.QUALIFICATION)
+                </label>
+                <input
+                  id="edit-emp-qualification"
+                  type="text"
+                  value={editQualification}
+                  onChange={(e) => setEditQualification(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+            </div>
+
             {editError && (
               <div
                 role="alert"
@@ -687,30 +788,73 @@ export const EmployeesPage: React.FC = () => {
                 Cancel
               </button>
               <button type="submit" className="btn-base btn-primary">
-                Save Changes
+                Save Employee Changes
               </button>
             </div>
           </form>
         )}
       </Modal>
 
-      {/* Employee Details Modal (Distinguishing Stored vs Derived Values) */}
+      {/* Delete / Remove Employee Confirmation Modal */}
+      <Modal
+        isOpen={deletingEmployee !== null}
+        onClose={() => setDeletingEmployee(null)}
+        title="Confirm Employee Record Removal"
+        subtitle="Removes the local ER_EMPLOYEE record while preserving the candidate and application history."
+      >
+        {deletingEmployee && (
+          <div className="space-y-4 text-xs">
+            <div className="rounded-xl p-3.5 bg-[var(--danger-bg)] text-[var(--danger)] border border-[var(--danger)]/30 flex items-start gap-2.5">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <div className="font-bold">
+                  Remove Employee #{deletingEmployee.EMPLOYEE_ID} ({deletingEmployee.FULL_NAME})?
+                </div>
+                <p className="leading-relaxed">
+                  This action removes the employee entry from the local prototype directory. To
+                  keep an employee on file without deleting their record, edit their status to{' '}
+                  <code className="font-mono-tabular">INACTIVE</code> instead.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingEmployee(null)}
+                className="btn-base btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="btn-base btn-destructive"
+              >
+                Confirm Remove Employee
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Employee Details Modal (Distinguishing Stored vs Derived Values + Direct Edit Trigger) */}
       <Modal
         isOpen={selectedEmployee !== null}
         onClose={() => setSelectedEmployeeId(null)}
         title={
           selectedEmployee
-            ? `Employee #${selectedEmployee.EMPLOYEE_ID} · ${selectedEmployee.FULL_NAME}`
+            ? `Employee Profile #${selectedEmployee.EMPLOYEE_ID} · ${selectedEmployee.FULL_NAME}`
             : 'Employee Record'
         }
         subtitle="Distinguishes stored ER_EMPLOYEE columns from relational attributes derived via ER_APPLICATION, ER_CANDIDATE, and ER_JOB."
         maxWidthClass="max-w-xl"
       >
         {selectedEmployee && (
-          <div className="space-y-4 text-xs">
+          <div className="space-y-5 text-xs">
             <div className="space-y-2">
               <div className="font-semibold text-[var(--brand-primary)] font-mono-tabular">
-                1. Stored Columns in ER_EMPLOYEE
+                1. Stored Employment Record (ER_EMPLOYEE)
               </div>
               <div className="surface-inset rounded-xl p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
@@ -740,8 +884,8 @@ export const EmployeesPage: React.FC = () => {
                   <div className="font-mono-tabular mt-0.5">{selectedEmployee.JOINING_DATE}</div>
                 </div>
                 <div>
-                  <div className="text-[var(--text-secondary)]">ANNUAL_SALARY</div>
-                  <div className="font-mono-tabular font-semibold mt-0.5">
+                  <div className="text-[var(--text-secondary)]">ANNUAL_SALARY (HR View)</div>
+                  <div className="font-mono-tabular font-bold text-[var(--brand-primary)] mt-0.5">
                     {formatInrSalary(selectedEmployee.ANNUAL_SALARY)}
                   </div>
                 </div>
@@ -751,12 +895,18 @@ export const EmployeesPage: React.FC = () => {
                     <StatusIndicator status={selectedEmployee.EMPLOYMENT_STATUS} />
                   </div>
                 </div>
+                <div className="col-span-2">
+                  <div className="text-[var(--text-secondary)]">ASSIGNED DEPARTMENT</div>
+                  <div className="font-semibold mt-0.5">
+                    {selectedEmployee.DEPT_NAME} (DEPT_ID #{selectedEmployee.DEPT_ID})
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="font-semibold text-[var(--text-primary)] font-mono-tabular">
-                2. Derived Relational Values (Joined via FK)
+                2. Linked Candidate & Application Information
               </div>
               <div className="surface-card rounded-xl p-4 grid grid-cols-2 gap-3">
                 <div>
@@ -766,23 +916,43 @@ export const EmployeesPage: React.FC = () => {
                 <div>
                   <div className="text-[var(--text-secondary)]">EMAIL & PHONE</div>
                   <div className="mt-0.5">
-                    {selectedEmployee.EMAIL} · {selectedEmployee.PHONE ?? '—'}
+                    {selectedEmployee.EMAIL} · {selectedEmployee.PHONE ?? 'Not provided'}
                   </div>
                 </div>
                 <div>
                   <div className="text-[var(--text-secondary)]">QUALIFICATION & EXPERIENCE</div>
                   <div className="mt-0.5">
-                    {selectedEmployee.QUALIFICATION ?? '—'} ({selectedEmployee.EXPERIENCE_YEARS}{' '}
-                    yrs)
+                    {selectedEmployee.QUALIFICATION ?? 'Not provided'} (
+                    {selectedEmployee.EXPERIENCE_YEARS} yrs)
                   </div>
                 </div>
                 <div>
-                  <div className="text-[var(--text-secondary)]">JOB & DEPARTMENT</div>
-                  <div className="mt-0.5">
-                    {selectedEmployee.JOB_TITLE} · {selectedEmployee.DEPT_NAME}
-                  </div>
+                  <div className="text-[var(--text-secondary)]">INITIAL APPLIED POSITION</div>
+                  <div className="mt-0.5">{selectedEmployee.JOB_TITLE}</div>
                 </div>
               </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-[var(--border-subtle)]">
+              <button
+                type="button"
+                onClick={() => {
+                  const emp = selectedEmployee;
+                  setSelectedEmployeeId(null);
+                  openEditModal(emp);
+                }}
+                className="btn-base btn-primary text-xs"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Edit Salary, Department & Details</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedEmployeeId(null)}
+                className="btn-base btn-secondary text-xs"
+              >
+                Close Profile
+              </button>
             </div>
           </div>
         )}
